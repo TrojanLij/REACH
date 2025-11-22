@@ -1,0 +1,23 @@
+[project]
+name = "reach"
+version = "0.1.0"
+description = "REACH web exploitation framework"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy",
+    "pydantic",
+    "httpx",
+    "pymysql",
+    "rich",
+    "typer[all]",
+]
+
+[project.optional-dependencies]
+forge = []
+core = []
+cli = []
+
+[project.scripts]
+reach = "reach.cli.main:main"

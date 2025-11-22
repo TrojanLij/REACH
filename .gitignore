@@ -1,0 +1,7 @@
+/.venv/*
+
+TODO.md
+
+/build
+*.pyc
+/src/reach.egg-info
