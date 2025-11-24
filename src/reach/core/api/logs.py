@@ -8,7 +8,6 @@ from reach.core.logging import LoggedRequest, get_logs_since
 
 router = APIRouter(prefix="/api/logs", tags=["logs"])
 
-
 @router.get("", response_model=List[LoggedRequest])
 def list_logs(
     since_id: int = 0,
@@ -18,4 +17,3 @@ def list_logs(
     Return logs with id > since_id (for streaming / tailing).
     """
     return get_logs_since(since_id, limit)
-

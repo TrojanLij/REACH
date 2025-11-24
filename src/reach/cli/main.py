@@ -164,23 +164,39 @@ def tail_logs(
         "--once",
         help="Fetch logs once and exit (no streaming).",
     ),
+    regex: str | None = typer.Option(
+        None,
+        "--regex",
+        help="Only show log entries where this regex matches (method/path/status/ip/host/body).",
+    ),
 ) -> None:
     """
     Stream inbound requests (and status) from REACH Core, like `tail -f`.
+
+    If --regex is provided, only matching entries are shown.
     """
     import time
     import httpx
+    import re
     from rich.console import Console
 
     console = Console()
     last_id = 0
+
+    pattern = None
+    if regex:
+        try:
+            pattern = re.compile(regex)
+        except re.error as e:
+            console.print(f"[red]Invalid regex:[/red] {e}")
+            raise typer.Exit(code=1)
 
     console.print(f"[cyan]Streaming logs from[/cyan] {core_url} (Ctrl+C to stop)")
 
     with httpx.Client(base_url=core_url, timeout=5.0) as client:
         while True:
             try:
-                resp = client.get("/api/logs", params={"since_id": last_id, "limit": 200})
+                resp = client.get("/api/logs", params={"since_id": last_id, "limit": 200},headers={"REACHTailLogServer":"True"})
                 resp.raise_for_status()
             except Exception as e:
                 console.print(f"[red]Error fetching logs:[/red] {e}")
@@ -192,7 +208,6 @@ def tail_logs(
             logs = resp.json()
             if logs:
                 for entry in logs:
-                    # update last seen id
                     if entry["id"] > last_id:
                         last_id = entry["id"]
 
@@ -201,6 +216,27 @@ def tail_logs(
                     path = entry["path"]
                     status = entry.get("status_code")
                     route_id = entry.get("route_id")
+                    client_ip = entry.get("client_ip") or "-"
+                    host = entry.get("host") or "-"
+                    body = entry.get("body") or ""
+
+                    # Build a searchable text blob for regex matching
+                    text_for_match = " ".join(
+                        str(x)
+                        for x in [
+                            method,
+                            path,
+                            status,
+                            route_id,
+                            client_ip,
+                            host,
+                            body,
+                        ]
+                    )
+
+                    if pattern is not None and not pattern.search(text_for_match):
+                        # Skip non-matching entries
+                        continue
 
                     console.print(
                         f"[bold]{entry['id']:>5}[/bold] "
@@ -208,14 +244,13 @@ def tail_logs(
                         f"[green]{method:<6}[/green] "
                         f"{path} "
                         f"-> [yellow]{status}[/yellow] "
-                        f"(route_id={route_id})"
+                        f"(route_id={route_id}, ip={client_ip}, host={host})"
                     )
 
             if once:
                 break
 
             time.sleep(interval)
-
 
 # ---- DEV ----
 dev_app = typer.Typer(help="Developer utilities (dangerous in prod!)")
@@ -249,7 +284,6 @@ def reset_db(
 
     typer.echo("✅ Database schema reset (all tables dropped and recreated).")
 
-
 @dev_app.command("clear-logs")
 def clear_logs_cmd() -> None:
     """
@@ -261,10 +295,8 @@ def clear_logs_cmd() -> None:
     reach_logging.clear_logs()
     typer.echo("🧹 In-memory request logs cleared.")
 
-
 def main() -> None:
     app()
-
 
 if __name__ == "__main__":
     main()

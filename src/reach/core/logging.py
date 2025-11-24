@@ -6,22 +6,22 @@ from typing import Dict, List
 
 from pydantic import BaseModel
 
-
 class LoggedRequest(BaseModel):
-    id: int                      # 👈 NEW
+    id: int
     timestamp: datetime
     method: str
     path: str
     route_id: int | None
     status_code: int | None
+    client_ip: str | None = None
+    host: str | None = None
     headers: Dict[str, str]
     query_params: Dict[str, str]
     body: str | None = None
 
 
 _request_log: List[LoggedRequest] = []
-_next_id: int = 1  # 👈 NEW
-
+_next_id: int = 1
 
 def add_log(
     *,
@@ -32,6 +32,8 @@ def add_log(
     headers: Dict[str, str],
     query_params: Dict[str, str],
     body: str | None,
+    client_ip: str | None = None,
+    host: str | None = None,
 ) -> None:
     global _next_id
 
@@ -49,7 +51,6 @@ def add_log(
     _next_id += 1
     _request_log.append(entry)
 
-
 def get_logs(limit: int = 100) -> List[LoggedRequest]:
     return list(reversed(_request_log[-limit:]))
 
@@ -63,7 +64,9 @@ def get_logs_since(since_id: int, limit: int = 100) -> List[LoggedRequest]:
     return new
 
 def clear_logs() -> None:
-    """Dev helper: clear in-memory request log."""
+    """
+    Dev helper: clear in-memory request log.
+    """
     _request_log.clear()
     global _next_id
     _next_id = 1

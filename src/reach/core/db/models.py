@@ -15,7 +15,7 @@ class Route(Base):
     status_code = Column(Integer, nullable=False, default=200)
     response_body = Column(Text, nullable=False, default="OK")
     content_type = Column(String(100), nullable=False, default="text/plain")
-    body_encoding = Column(String(16), nullable=False, default="none")  # 👈 NEW
+    body_encoding = Column(String(16), nullable=False, default="none")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 

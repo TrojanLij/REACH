@@ -23,6 +23,32 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
 
+    # 🔹 Global middleware: log EVERY request (api, debug, dynamic, etc.)
+    @app.middleware("http")
+    async def log_all_requests(request: Request, call_next):
+        response = await call_next(request)
+
+        # If someone already logged this request (dynamic_router), skip
+        if getattr(request.state, "logged", False):
+            return response
+
+        client_ip = request.client.host if request.client else None
+        host = request.headers.get("host")
+
+        reach_logging.add_log(
+            method=request.method,
+            path=request.url.path,
+            route_id=None,  # unknown here
+            status_code=response.status_code,
+            headers={k: v for k, v in request.headers.items()},
+            query_params={k: v for k, v in request.query_params.items()},
+            body=None,  # we don't read body in middleware for now
+            client_ip=client_ip,
+            host=host,
+        )
+
+        return response
+
     @app.get("/api/health")
     async def health(db: Session = Depends(get_db)):
         count = db.query(models.Route).count()
@@ -40,7 +66,6 @@ def create_app() -> FastAPI:
                     "path": "/" + r.path,
                     "status_code": r.status_code,
                     "content_type": r.content_type,
-                    # small preview so we don't spam giant payloads
                     "response_preview": (r.response_body[:120] + "…")
                     if len(r.response_body) > 120
                     else r.response_body,
@@ -71,7 +96,7 @@ def create_app() -> FastAPI:
         )
         db_route = db.execute(stmt).scalar_one_or_none()
 
-        # Read body for logging
+        # Read body for logging (dynamic endpoints are interesting)
         try:
             body_bytes = await request.body()
             body_text = body_bytes.decode("utf-8", errors="replace") if body_bytes else None
@@ -80,7 +105,10 @@ def create_app() -> FastAPI:
 
         status_code = db_route.status_code if db_route else 404
 
-        # Log request (including 404s)
+        client_ip = request.client.host if request.client else None
+        host = request.headers.get("host")
+
+        # Detailed log for dynamic routes (including body + route_id)
         reach_logging.add_log(
             method=method,
             path="/" + full_path,
@@ -89,9 +117,14 @@ def create_app() -> FastAPI:
             headers={k: v for k, v in request.headers.items()},
             query_params={k: v for k, v in request.query_params.items()},
             body=body_text,
+            client_ip=client_ip,
+            host=host,
         )
 
-        # 🔴 IMPORTANT: bail out BEFORE touching db_route.*
+        # mark as logged so middleware won't double-log
+        request.state.logged = True
+
+        # No matching route → clean 404
         if not db_route:
             return JSONResponse(
                 status_code=404,
@@ -105,7 +138,6 @@ def create_app() -> FastAPI:
                 body_bytes = b64decode(body)
                 body = body_bytes.decode("utf-8", errors="replace")
             except Exception as e:
-                # You can choose to 500, 400, or just send raw if decode fails.
                 return JSONResponse(
                     status_code=500,
                     content={"detail": f"Failed to decode base64 body: {e}"},
