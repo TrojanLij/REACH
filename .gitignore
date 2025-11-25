@@ -1,7 +1,10 @@
 /.venv/*
-
-TODO.md
-
-/build
-*.pyc
+/build/*
 /src/reach.egg-info
+
+# file types
+*.pyc
+*.db
+
+# Specific files
+TODO.md

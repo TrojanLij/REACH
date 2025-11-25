@@ -7,69 +7,13 @@ from rich.console import Console
 
 app = typer.Typer(help="REACH command-line interface")
 
-routes_app = typer.Typer(help="Inspect and manage routes")
-app.add_typer(routes_app, name="routes")
-
-@routes_app.command("list")
-def list_routes(
-    show_body: bool = typer.Option(False, "--show-body"),
-    full_body: bool = typer.Option(False, "--full-body"),
-    decode: bool = typer.Option(
-        True,
-        "--decode/--raw",
-        help="Decode base64 bodies before displaying (default: decode).",
-    ),
-) -> None:
-    from base64 import b64decode
-    from reach.core.server import app as fastapi_app
-    from reach.core.db import SessionLocal, models
-
-    ...
-
-    db_routes = db.query(models.Route).all()
-    for r in db_routes:
-        base_row = [...]
-        if show_body or full_body:
-            body = r.response_body or ""
-            if decode and r.body_encoding == "base64":
-                try:
-                    body = b64decode(body).decode("utf-8", errors="replace")
-                except Exception:
-                    body = f"[INVALID BASE64] {body[:40]}…"
-
-            if not full_body and len(body) > 80:
-                body = body[:80] + "…"
-            base_row.append(body)
-        table.add_row(*base_row)
-
-server_app = typer.Typer(help="Start and manage the REACH Core server")
-app.add_typer(server_app, name="server")
-
-@server_app.command("start")
-def start_server(
-    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Server host"),
-    port: int = typer.Option(8000, "--port", "-p", help="Server port"),
-    reload: bool = typer.Option(True, "--reload/--no-reload", help="Auto-reload on file change"),
-    log_level: str = typer.Option("info", "--log-level", help="Log level (debug, info, warning, error)"),
-):
-    """
-    Start the REACH Core server (FastAPI + Uvicorn).
-    """
-    import uvicorn
-
-    typer.echo(f"🚀 Starting REACH Core server on http://{host}:{port} ...")
-    typer.echo("📡 App: reach.core.server:app")
-
-    uvicorn.run(
-        "reach.core.server:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level=log_level,
-    )
+# -------------------------
+# ROUTES COMMANDS
+# -------------------------
 
 routes_app = typer.Typer(help="Inspect and manage routes")
 app.add_typer(routes_app, name="routes")
+
 
 @routes_app.command("list")
 def list_routes(
@@ -83,12 +27,18 @@ def list_routes(
         "--full-body",
         help="Show full body instead of a truncated preview (implies --show-body).",
     ),
+    decode: bool = typer.Option(
+        True,
+        "--decode/--raw",
+        help="Decode base64 bodies before displaying (default: decode).",
+    ),
 ) -> None:
     """
     List static (FastAPI) and dynamic (DB) routes.
 
     Dynamic routes include the payload stored in response_body.
     """
+    from base64 import b64decode
     from reach.core.server import app as fastapi_app
     from reach.core.db import SessionLocal, models
 
@@ -133,7 +83,14 @@ def list_routes(
 
             if show_body or full_body:
                 body = r.response_body or ""
-                if full_body is False and len(body) > 80:
+                if decode and getattr(r, "body_encoding", "none") == "base64":
+                    from base64 import b64decode
+                    try:
+                        body = b64decode(body).decode("utf-8", errors="replace")
+                    except Exception:
+                        body = f"[INVALID BASE64] {body[:40]}…"
+
+                if not full_body and len(body) > 80:
                     body = body[:80] + "…"
                 base_row.append(body)
 
@@ -143,8 +100,46 @@ def list_routes(
 
     console.print(table)
 
+
+# -------------------------
+# SERVER COMMANDS
+# -------------------------
+
+server_app = typer.Typer(help="Start and manage the REACH Core server")
+app.add_typer(server_app, name="server")
+
+
+@server_app.command("start")
+def start_server(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Server host"),
+    port: int = typer.Option(8000, "--port", "-p", help="Server port"),
+    reload: bool = typer.Option(True, "--reload/--no-reload", help="Auto-reload on file change"),
+    log_level: str = typer.Option("info", "--log-level", help="Log level (debug, info, warning, error)"),
+):
+    """
+    Start the REACH Core server (FastAPI + Uvicorn).
+    """
+    import uvicorn
+
+    typer.echo(f"🚀 Starting REACH Core server on http://{host}:{port} ...")
+    typer.echo("📡 App: reach.core.server:app")
+
+    uvicorn.run(
+        "reach.core.server:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_level=log_level,
+    )
+
+
+# -------------------------
+# LOGS COMMANDS
+# -------------------------
+
 logs_app = typer.Typer(help="Stream and inspect request logs")
 app.add_typer(logs_app, name="logs")
+
 
 @logs_app.command("tail")
 def tail_logs(
@@ -196,7 +191,11 @@ def tail_logs(
     with httpx.Client(base_url=core_url, timeout=5.0) as client:
         while True:
             try:
-                resp = client.get("/api/logs", params={"since_id": last_id, "limit": 200},headers={"REACHTailLogServer":"True"})
+                resp = client.get(
+                    "/api/logs",
+                    params={"since_id": last_id, "limit": 200},
+                    headers={"REACHTailLogServer": "True"},
+                )
                 resp.raise_for_status()
             except Exception as e:
                 console.print(f"[red]Error fetching logs:[/red] {e}")
@@ -220,7 +219,6 @@ def tail_logs(
                     host = entry.get("host") or "-"
                     body = entry.get("body") or ""
 
-                    # Build a searchable text blob for regex matching
                     text_for_match = " ".join(
                         str(x)
                         for x in [
@@ -235,7 +233,6 @@ def tail_logs(
                     )
 
                     if pattern is not None and not pattern.search(text_for_match):
-                        # Skip non-matching entries
                         continue
 
                     console.print(
@@ -252,9 +249,14 @@ def tail_logs(
 
             time.sleep(interval)
 
-# ---- DEV ----
-dev_app = typer.Typer(help="Developer utilities (dangerous in prod!)")
+
+# -------------------------
+# DEV COMMANDS
+# -------------------------
+
+dev_app = typer.Typer(help="Developer utilities (dangerous in prod... but we all know it's not making it that far!)")
 app.add_typer(dev_app, name="dev")
+
 
 @dev_app.command("reset-db")
 def reset_db(
@@ -278,25 +280,26 @@ def reset_db(
             abort=True,
         )
 
-    # Drop everything, then recreate
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
     typer.echo("✅ Database schema reset (all tables dropped and recreated).")
+
 
 @dev_app.command("clear-logs")
 def clear_logs_cmd() -> None:
     """
     Clear in-memory request logs in REACH Core.
     """
-    # Import lazily so CLI doesn’t pull in server at import time
     from reach.core import logging as reach_logging
 
     reach_logging.clear_logs()
     typer.echo("🧹 In-memory request logs cleared.")
 
+
 def main() -> None:
     app()
+
 
 if __name__ == "__main__":
     main()

@@ -23,7 +23,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
 
-    # 🔹 Global middleware: log EVERY request (api, debug, dynamic, etc.)
+    #! Global middleware: log EVERY request (api, debug, dynamic, etc.). HEADS UP! THIS IS NOISY IN THE LOGS :)
     @app.middleware("http")
     async def log_all_requests(request: Request, call_next):
         response = await call_next(request)
@@ -124,33 +124,39 @@ def create_app() -> FastAPI:
         # mark as logged so middleware won't double-log
         request.state.logged = True
 
-        # No matching route → clean 404
+                # No matching route → clean 404
         if not db_route:
             return JSONResponse(
                 status_code=404,
                 content={"detail": "No dynamic route matched"},
             )
 
-        # Decode base64 only when needed
-        body = db_route.response_body or ""
+        # Decide how to build the response body
         if getattr(db_route, "body_encoding", "none") == "base64":
+            # Treat response_body as base64-encoded bytes (good for images)
             try:
-                body_bytes = b64decode(body)
-                body = body_bytes.decode("utf-8", errors="replace")
+                body_bytes = b64decode(db_route.response_body)
             except Exception as e:
                 return JSONResponse(
                     status_code=500,
                     content={"detail": f"Failed to decode base64 body: {e}"},
                 )
-
-        return Response(
-            content=body,
-            status_code=db_route.status_code,
-            media_type=db_route.content_type,
-        )
+            # base64 / images
+            return Response(
+                content=body_bytes,
+                status_code=db_route.status_code,
+                media_type=db_route.content_type,
+            )
+        else:
+            # Plain text payload
+            body_str = db_route.response_body or ""
+            return Response(
+                content=body_str,
+                status_code=db_route.status_code,
+                media_type=db_route.content_type,
+            )
 
     return app
-
 
 # uvicorn entrypoint
 app = create_app()
