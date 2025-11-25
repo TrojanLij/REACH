@@ -14,7 +14,6 @@ router = APIRouter(prefix="/api/routes", tags=["routes"])
 def _normalize_path(path: str) -> str:
     return path.lstrip("/")
 
-
 @router.get("", response_model=list[RouteOut])
 def list_routes(db: Session = Depends(get_db)):
     stmt = select(models.Route).order_by(models.Route.id)
