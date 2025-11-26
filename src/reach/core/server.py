@@ -96,7 +96,9 @@ def create_app() -> FastAPI:
         )
         db_route = db.execute(stmt).scalar_one_or_none()
 
-        # Read body for logging (dynamic endpoints are interesting)
+        # Read body for logging (dynamic endpoints are interesting).
+        # We always treat this as text on the logging side to avoid
+        # accidentally interpreting it as anything executable.
         try:
             body_bytes = await request.body()
             body_text = body_bytes.decode("utf-8", errors="replace") if body_bytes else None
@@ -119,6 +121,7 @@ def create_app() -> FastAPI:
             body=body_text,
             client_ip=client_ip,
             host=host,
+            body_encoding="text",
         )
         
         # mark as logged so middleware won't double-log
