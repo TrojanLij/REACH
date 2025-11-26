@@ -44,6 +44,8 @@ def add_log(
         path=path,
         route_id=route_id,
         status_code=status_code,
+        client_ip=client_ip,
+        host=host,
         headers=headers,
         query_params=query_params,
         body=body,

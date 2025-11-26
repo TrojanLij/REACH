@@ -120,11 +120,11 @@ def create_app() -> FastAPI:
             client_ip=client_ip,
             host=host,
         )
-
+        
         # mark as logged so middleware won't double-log
         request.state.logged = True
 
-                # No matching route → clean 404
+        # No matching route → clean 404
         if not db_route:
             return JSONResponse(
                 status_code=404,
