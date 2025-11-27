@@ -83,6 +83,7 @@ def tail_logs(
                     client_ip = entry.get("client_ip") or "-"
                     host = entry.get("host") or "-"
                     body = entry.get("body") or ""
+                    query_params = entry.get("query_params") or {}
 
                     text_for_match = " ".join(
                         str(x)
@@ -108,6 +109,17 @@ def tail_logs(
                         f"-> [yellow]{status}[/yellow] "
                         f"(route_id={route_id}, ip={client_ip}, host={host})"
                     )
+
+                    # For GET requests, also show query parameters (if any)
+                    if method.upper() == "GET" and isinstance(query_params, dict) and query_params:
+                        for key, value in query_params.items():
+                            console.print(f"\t[GET] {key}={value}")
+
+                    # For POST/PUT/PATCH, show body (if any)
+                    if method.upper() in {"POST", "PUT", "PATCH"} and body:
+                        console.print("\t[body]")
+                        for line in str(body).splitlines():
+                            console.print(f"\t\t{line}")
 
             if once:
                 break

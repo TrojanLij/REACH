@@ -42,5 +42,6 @@ class RequestLog(Base):
     headers = Column(Text, nullable=False)
     query_params = Column(Text, nullable=False)
     body = Column(Text, nullable=True)
+    # Encoding of the stored body field. Currently always "text".
     body_encoding = Column(String(16), nullable=False, default="text")
 
