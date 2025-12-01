@@ -1,13 +1,18 @@
-# reach/core/server.py
+"""App factories for the REACH Core public and admin FastAPI applications."""
+
 from __future__ import annotations
 
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
 
-from .db import Base, engine, get_db, models
-from .api.routes import router as routes_router
-from .api.logs import router as logs_router
+from .db import Base, engine
 from .routing.dynamic import register_dynamic_routing
+from .routing.static import register_static_routing
+
+
+def init_db() -> None:
+    """Initialize database schema (development convenience)."""
+    # Dev: auto-create tables. Later: migrations.
+    Base.metadata.create_all(bind=engine)
 
 
 def create_public_app() -> FastAPI:
@@ -15,8 +20,7 @@ def create_public_app() -> FastAPI:
     Public-facing app: serves dynamic routes / payloads.
     Typically bound to a port like 8000.
     """
-    # Dev: auto-create tables. Later: migrations.
-    Base.metadata.create_all(bind=engine)
+    init_db()
 
     app = FastAPI(
         title="REACH Core (public)",
@@ -35,8 +39,7 @@ def create_admin_app() -> FastAPI:
     Admin app: manage routes, view logs, etc.
     Typically bound to a port like 8001.
     """
-    # Dev: auto-create tables. Later: migrations.
-    Base.metadata.create_all(bind=engine)
+    init_db()
 
     app = FastAPI(
         title="REACH Core (admin)",
@@ -44,33 +47,8 @@ def create_admin_app() -> FastAPI:
         version="0.1.0",
     )
 
-    @app.get("/api/health")
-    async def health(db: Session = Depends(get_db)):
-        count = db.query(models.Route).count()
-        return {"status": "ok", "routes": count}
-
-    @app.get("/debug/routes")
-    async def debug_routes(db: Session = Depends(get_db)):
-        routes = db.query(models.Route).all()
-        return {
-            "count": len(routes),
-            "routes": [
-                {
-                    "id": r.id,
-                    "method": r.method,
-                    "path": "/" + r.path,
-                    "status_code": r.status_code,
-                    "content_type": r.content_type,
-                    "response_preview": (r.response_body[:120] + "…")
-                    if len(r.response_body) > 120
-                    else r.response_body,
-                }
-                for r in routes
-            ],
-        }
-
-    app.include_router(routes_router)
-    app.include_router(logs_router)
+    # Attach static/admin routes (health, debug, CRUD APIs, logs)
+    register_static_routing(app)
 
     return app
 

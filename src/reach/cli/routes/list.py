@@ -7,6 +7,83 @@ from rich.table import Table
 
 from . import app
 
+
+def build_routes_table(
+    *,
+    include_static: bool,
+    include_dynamic: bool,
+    show_body: bool,
+    full_body: bool,
+    decode: bool,
+) -> Table:
+    """
+    Build a Rich table for static and/or dynamic routes.
+
+    The caller controls which types to include so that different CLI
+    subcommands can expose static-only, dynamic-only, or combined views.
+    """
+    from base64 import b64decode
+    from reach.core.server import app as fastapi_app
+    from reach.core.db import SessionLocal, models
+
+    table = Table(title="REACH Routes", show_lines=True)
+    table.add_column("Type", style="cyan", no_wrap=True)
+    table.add_column("Method", style="green")
+    table.add_column("Path", style="magenta")
+    table.add_column("Status", style="yellow")
+    table.add_column("ContentType", style="white")
+
+    if show_body or full_body:
+        table.add_column("Body", style="white")
+
+    # Static FastAPI routes
+    if include_static:
+        for route in fastapi_app.routes:
+            methods = ", ".join(route.methods) if route.methods else ""
+            base_row = [
+                "STATIC",
+                methods,
+                route.path,
+                "-",
+                "-",
+            ]
+            if show_body or full_body:
+                base_row.append("-")
+            table.add_row(*base_row)
+
+    # Dynamic DB routes (user-defined payloads)
+    if include_dynamic:
+        db = SessionLocal()
+        try:
+            db_routes = db.query(models.Route).all()
+            for r in db_routes:
+                base_row = [
+                    "DYNAMIC",
+                    r.method,
+                    "/" + r.path,
+                    str(r.status_code),
+                    r.content_type,
+                ]
+
+                if show_body or full_body:
+                    body = r.response_body or ""
+                    if decode and getattr(r, "body_encoding", "none") == "base64":
+                        try:
+                            body = b64decode(body).decode("utf-8", errors="replace")
+                        except Exception:
+                            body = f"[INVALID BASE64] {body[:40]}…"
+
+                    if not full_body and len(body) > 80:
+                        body = body[:80] + "…"
+                    base_row.append(body)
+
+                table.add_row(*base_row)
+        finally:
+            db.close()
+
+    return table
+
+
 @app.command("list")
 def list_routes(
     show_body: bool = typer.Option(
@@ -30,64 +107,12 @@ def list_routes(
 
     Dynamic routes include the payload stored in response_body.
     """
-    from base64 import b64decode
-    from reach.core.server import app as fastapi_app
-    from reach.core.db import SessionLocal, models
-
     console = Console()
-
-    table = Table(title="REACH Routes", show_lines=True)
-    table.add_column("Type", style="cyan", no_wrap=True)
-    table.add_column("Method", style="green")
-    table.add_column("Path", style="magenta")
-    table.add_column("Status", style="yellow")
-    table.add_column("ContentType", style="white")
-
-    if show_body or full_body:
-        table.add_column("Body", style="white")
-
-    # Static FastAPI routes
-    for route in fastapi_app.routes:
-        methods = ", ".join(route.methods) if route.methods else ""
-        base_row = [
-            "STATIC",
-            methods,
-            route.path,
-            "-",
-            "-",
-        ]
-        if show_body or full_body:
-            base_row.append("-")
-        table.add_row(*base_row)
-
-    # Dynamic DB routes (user-defined payloads)
-    db = SessionLocal()
-    try:
-        db_routes = db.query(models.Route).all()
-        for r in db_routes:
-            base_row = [
-                "DYNAMIC",
-                r.method,
-                "/" + r.path,
-                str(r.status_code),
-                r.content_type,
-            ]
-
-            if show_body or full_body:
-                body = r.response_body or ""
-                if decode and getattr(r, "body_encoding", "none") == "base64":
-                    from base64 import b64decode
-                    try:
-                        body = b64decode(body).decode("utf-8", errors="replace")
-                    except Exception:
-                        body = f"[INVALID BASE64] {body[:40]}…"
-
-                if not full_body and len(body) > 80:
-                    body = body[:80] + "…"
-                base_row.append(body)
-
-            table.add_row(*base_row)
-    finally:
-        db.close()
-
+    table = build_routes_table(
+        include_static=True,
+        include_dynamic=True,
+        show_body=show_body or full_body,
+        full_body=full_body,
+        decode=decode,
+    )
     console.print(table)

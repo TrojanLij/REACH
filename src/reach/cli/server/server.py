@@ -11,7 +11,7 @@ from . import app
 def start_server(
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Server host"),
     port: int = typer.Option(8000, "--port", "-p", help="Server port"),
-    reload: bool = typer.Option(True, "--reload/--no-reload", help="Auto-reload on file change"),
+    reload: bool = typer.Option(False, "--reload/--no-reload", help="Auto-reload on file change"),
     log_level: str = typer.Option("info", "--log-level", help="Log level (debug, info, warning, error)"),
     role: str = typer.Option(
         "public",

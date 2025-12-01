@@ -113,13 +113,13 @@ def tail_logs(
                     # For GET requests, also show query parameters (if any)
                     if method.upper() == "GET" and isinstance(query_params, dict) and query_params:
                         for key, value in query_params.items():
-                            console.print(f"\t[GET] {key}={value}")
+                            console.print(f"\t{key}={value}")
 
                     # For POST/PUT/PATCH, show body (if any)
                     if method.upper() in {"POST", "PUT", "PATCH"} and body:
                         console.print("\t[body]")
                         for line in str(body).splitlines():
-                            console.print(f"\t\t{line}")
+                            console.print(f"\t{line}")
 
             if once:
                 break

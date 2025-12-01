@@ -1,4 +1,4 @@
-# reach/core/logging.py
+"""Database-backed request logging utilities for REACH Core."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -34,11 +34,13 @@ class LoggedRequest(BaseModel):
         from_attributes = True
 
 
-def _serialize_mapping(value: Dict[str, str]) -> str:
+def _mapping_to_json(value: Dict[str, str]) -> str:
+    """Serialize a mapping (headers, query params) to JSON for storage."""
     return json.dumps(value, ensure_ascii=False)
 
 
-def _deserialize_mapping(raw: str) -> Dict[str, str]:
+def _json_to_mapping(raw: str) -> Dict[str, str]:
+    """Deserialize a JSON mapping into a {str: str} dict, or {} on error."""
     try:
         data = json.loads(raw)
         if isinstance(data, dict):
@@ -78,8 +80,8 @@ def add_log(
             status_code=status_code,
             client_ip=client_ip,
             host=host,
-            headers=_serialize_mapping(headers),
-            query_params=_serialize_mapping(query_params),
+            headers=_mapping_to_json(headers),
+            query_params=_mapping_to_json(query_params),
             body=body,
             body_encoding=body_encoding,
         )
@@ -99,8 +101,8 @@ def _to_logged_request(row: models.RequestLog) -> LoggedRequest:
         status_code=row.status_code,
         client_ip=row.client_ip,
         host=row.host,
-        headers=_deserialize_mapping(row.headers),
-        query_params=_deserialize_mapping(row.query_params),
+        headers=_json_to_mapping(row.headers),
+        query_params=_json_to_mapping(row.query_params),
         body=row.body,
         body_encoding=getattr(row, "body_encoding", "text"),
     )
@@ -129,7 +131,11 @@ def get_logs_since(since_id: int, limit: int = 100) -> List[LoggedRequest]:
     """
     db = SessionLocal()
     try:
-        stmt = select(models.RequestLog).where(models.RequestLog.id > since_id).order_by(models.RequestLog.id.asc())
+        stmt = (
+            select(models.RequestLog)
+            .where(models.RequestLog.id > since_id)
+            .order_by(models.RequestLog.id.asc())
+        )
         if limit is not None:
             stmt = stmt.limit(limit)
         rows = db.execute(stmt).scalars().all()

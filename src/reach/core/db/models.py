@@ -1,13 +1,16 @@
-# reach/core/db/models.py
+"""SQLAlchemy ORM models backing REACH Core persistence."""
 from __future__ import annotations
 
 from datetime import datetime
+
 from sqlalchemy import Column, Integer, String, Text, DateTime
 
 from .base import Base
 
 
 class Route(Base):
+    """Dynamic route definition stored in the database."""
+
     __tablename__ = "routes"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -16,8 +19,10 @@ class Route(Base):
     status_code = Column(Integer, nullable=False, default=200)
     response_body = Column(Text, nullable=False, default="OK")
     content_type = Column(String(100), nullable=False, default="text/plain")
+    # Encoding of response_body, e.g. "none" or "base64".
     body_encoding = Column(String(16), nullable=False, default="none")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    # Manually maintained; updated in the admin API.
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
 
@@ -39,9 +44,11 @@ class RequestLog(Base):
     status_code = Column(Integer, nullable=True)
     client_ip = Column(String(45), nullable=True)
     host = Column(String(255), nullable=True)
+    # JSON-encoded mapping of header name to value.
     headers = Column(Text, nullable=False)
+    # JSON-encoded mapping of query parameter name to value.
     query_params = Column(Text, nullable=False)
+    # Request body as text; encoding tracked in body_encoding.
     body = Column(Text, nullable=True)
     # Encoding of the stored body field. Currently always "text".
     body_encoding = Column(String(16), nullable=False, default="text")
-
