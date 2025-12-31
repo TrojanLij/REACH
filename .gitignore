@@ -10,3 +10,4 @@
 # Specific files
 TODO.md
 *.py
+/.venv_ubuntu
