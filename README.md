@@ -1,6 +1,92 @@
 # REACH
 
-Lightweight FastAPI core plus a Typer-based CLI for spinning up dynamic routes during pentests.
+**R.E.A.C.H. — Request Engine for Attacks, Callbacks & Handling**
+
+REACH is a lightweight, extensible web exploitation framework designed for penetration testers and security researchers. It provides a dynamic routing core that allows operators to create, modify, and remove HTTP routes at runtime without restarting the service, making it well suited for live assessments and collaborative testing environments.
+
+REACH is an external tooling framework designed to enable penetration testers to rapidly deploy web-accessible assets for testing external callbacks, out-of-band interactions, and externally loaded payloads during external penetration tests and web application security assessments.
+
+The project is built around a FastAPI-based core with a Typer-powered CLI, enabling both programmatic embedding and standalone operation. REACH separates public-facing traffic handling from administrative control surfaces, allowing testers to expose payload endpoints in a controlled manner while retaining full control over route management, request logging, and analysis.
+
+REACH is intentionally minimal and portable, prioritizing ease of deployment, predictable behavior, and composability. It is designed to support more advanced workflows such as payload templating, out-of-band callbacks, traffic correlation, and collaborative analysis, while remaining useful as a standalone routing and logging tool.
+
+The framework is intended for authorized security testing only and is built to integrate into existing toolchains and assessment workflows with minimal friction.
+
+---
+
+## REACH in the Payload Chain
+
+REACH is designed to augment existing penetration testing workflows, not replace established tooling. In particular, it complements out-of-band (OOB) testing capabilities provided by platforms such as Burp Suite.
+
+While generalized OOB services (e.g., Burp Collaborator) are highly effective for detecting outbound interactions, they intentionally provide limited control over response behavior. Testers cannot customize HTTP methods, response bodies, headers, status codes, or application-specific behavior for external endpoints.
+
+REACH addresses this gap by allowing testers to deploy highly customizable, tester-controlled external endpoints. Dynamic routes can be created and modified at runtime to precisely control how an external resource responds when accessed by the target application or client. This enables more accurate validation of execution paths, interaction logic, and application behavior under realistic conditions.
+
+In practice, REACH functions as an additional tool in the payload chain, enabling rapid deployment and teardown of customizable external endpoints to support specific testing scenarios alongside existing OOB and collaboration services.
+
+---
+
+## Key Features
+
+REACH is designed to provide fine-grained control over external, tester-controlled web assets used during authorized security testing. Its primary value lies in enabling rapid iteration and customization of external endpoints that form part of a payload or callback chain.
+
+### Dynamic Route Management
+- Create, modify, and remove HTTP routes at runtime without restarting the service
+- Define routes using any HTTP method (GET, POST, PUT, DELETE, etc.)
+- Deploy or tear down endpoints instantly via the admin API or CLI
+
+### Highly Customizable Responses
+- Configure response bodies dynamically
+- Return responses as plain text, Base64-encoded content, or structured data
+- Control HTTP status codes (e.g., returning non-standard responses such as `418` instead of `200`)
+- Set custom headers and response metadata
+
+### Content-Type & Payload Control
+- Explicitly define response content types (e.g. `text/plain`, `application/json`, `image/png`, `image/svg+xml`)
+- Serve non-text responses such as images or other binary assets
+- Support scenarios where specific content handling behavior must be validated by the target application or client
+
+### Rapid Iteration During Live Testing
+- Routes can be altered on the fly to adjust behavior as testing progresses
+- Payload hosting does not require modifying files, rebuilding containers, or restarting services
+- Designed to support fast feedback loops during live engagements
+
+### Request Logging & Data Collection
+- Capture inbound requests to dynamic routes in a structured manner
+- Log headers, query parameters, and request metadata for analysis
+- Logging can be used to observe and correlate outbound application behavior during testing
+- Supports controlled collection of interaction data within the scope of an authorized engagement
+
+### Separation of Concerns
+- Public-facing routes are isolated from administrative control surfaces
+- Administrative APIs and logging interfaces can be bound to separate interfaces or ports
+- Supports clearer separation of responsibilities in environments where limited external exposure is required
+
+---
+
+## External Callback Validation (e.g. XSS, SSRF, XXE)
+
+During external penetration tests or web application security reviews, it is often necessary to validate whether an application performs outbound interactions, such as loading external resources or executing callbacks.
+
+In these scenarios, REACH can be deployed on a tester-controlled server and used to rapidly create web-accessible endpoints for payload hosting and callback observation. Dynamic routes can be defined at runtime (via the API or CLI) to serve test payloads or capture inbound requests without restarting the service.
+
+For example, when testing for client-side injection or out-of-band interaction behavior, a tester may:
+- Deploy REACH on external infrastructure under their control
+- Create a dynamic route that serves a test payload or logs inbound requests
+- Reference that route from within the target application input
+- Observe and correlate incoming requests via the REACH logging interface
+
+This approach allows testers to validate execution paths, callback behavior, and outbound connectivity in a controlled and auditable manner.
+
+---
+
+## Disclaimer
+
+REACH is an **actively developed** project and should be considered **experimental**. While it is built by security practitioners for security practitioners, it is **not intended to be exposed as a permanent or publicly accessible service**. The intent behind this project is to allow security practitioners to quickly spin up auxiliary tooling for web application penetration testing, including handling dynamic routes, external callbacks, and payload delivery during an active engagement.
+
+REACH is designed to be deployed **temporarily and in a controlled environment** for the duration of an authorized security engagement. Operators are expected to tear down instances after use and restrict network exposure to only what is required for the scope of the assessment. Running REACH on the public internet without proper isolation, access controls, and monitoring may introduce unnecessary risk.
+
+The authors assume **no responsibility for misuse, misconfiguration, or unintended exposure**. Users are solely responsible for ensuring they have explicit authorization to deploy and operate REACH and that it is used in compliance with applicable laws, contracts, and engagement scopes.
 
 ## Core (FastAPI apps)
 - Factories: `reach.core.server:create_public_app` (dynamic routes) and `reach.core.server:create_admin_app` (admin APIs/logs). Import the factories and compose them; nothing runs at import time.
@@ -83,3 +169,8 @@ python -m reach.cli.main logs tail --core-url http://127.0.0.1:8001 --once
   client = CoreClient("http://127.0.0.1:8001")
   routes = client.list_routes()
   ```
+
+## Notes / limitations
+- Auth has not been implemented (yet). Protect the admin app (`/api/logs`, `/api/routes`, `/debug/routes`) via network controls or auth; the public app blocks `/api/*` and `/debug/*` but does not enforce auth itself. 
+- On a fresh database, run `reach server start` (or call `init_db()`) before `reach routes ...` so the schema exists.
+- Dynamic routing currently reserves `/api/*` and `/debug/*`; tighten the reserved prefixes if you need to block docs endpoints (`/docs`, `/openapi.json`, `/redoc`, `/favicon.ico`) on the public app.

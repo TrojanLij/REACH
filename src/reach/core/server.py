@@ -28,6 +28,9 @@ def create_public_app() -> FastAPI:
         title="REACH Core (public)",
         description="Public server for dynamic routes / payloads",
         version="0.1.0",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
     )
 
     # Attach dynamic routing + logging middleware
@@ -45,6 +48,9 @@ def create_admin_app() -> FastAPI:
         title="REACH Core (admin)",
         description="Admin API for managing routes and logs",
         version="0.1.0",
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
+        openapi_url="/api/openapi.json",
     )
 
     # Attach static/admin routes (health, debug, CRUD APIs, logs)

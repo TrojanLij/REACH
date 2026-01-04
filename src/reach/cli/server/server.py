@@ -92,7 +92,8 @@ def start_server(
     admin_cfg = server_cfg.get("admin", {}) if isinstance(server_cfg.get("admin", {}), dict) else {}
 
     # Start with defaults
-    effective_host = server_cfg.get("host", public_cfg.get("host", DEFAULT_HOST))
+    effective_public_host = public_cfg.get("host", server_cfg.get("host", DEFAULT_HOST))
+    effective_admin_host = admin_cfg.get("host", server_cfg.get("host", DEFAULT_HOST))
     base_port = server_cfg.get("port", DEFAULT_PORT)
     preset_public_port = public_cfg.get("port")
     preset_admin_port = admin_cfg.get("port")
@@ -102,7 +103,8 @@ def start_server(
 
     # CLI overrides take priority when they differ from defaults
     if host != DEFAULT_HOST:
-        effective_host = host
+        effective_public_host = host
+        effective_admin_host = host
     if port != DEFAULT_PORT:
         base_port = port
     if port_public is not None:
@@ -117,7 +119,6 @@ def start_server(
         effective_log_level = log_level
 
     role = effective_role
-    host = effective_host
     reload = effective_reload
     log_level = effective_log_level
 
@@ -133,19 +134,20 @@ def start_server(
 
     # Preserve old behavior for role=both when no explicit admin port:
     # admin port defaults to public+1
-    if role == "both" and port_admin is None:
+    if role == "both" and preset_admin_port is None and port_admin is None:
         admin_port = public_port + 1
 
     if role in {"public", "admin"}:
         target = "reach.core.server:create_public_app" if role == "public" else "reach.core.server:create_admin_app"
         effective_port = public_port if role == "public" else admin_port
+        effective_host = effective_public_host if role == "public" else effective_admin_host
 
-        typer.echo(f"🚀 Starting REACH Core {role} server on http://{host}:{effective_port} ...")
+        typer.echo(f"🚀 Starting REACH Core {role} server on http://{effective_host}:{effective_port} ...")
         typer.echo(f"📡 App: {target}")
 
         uvicorn.run(
             target,
-            host=host,
+            host=effective_host,
             port=effective_port,
             reload=reload,
             log_level=log_level,
@@ -155,15 +157,15 @@ def start_server(
         public_target = "reach.core.server:create_public_app"
         admin_target = "reach.core.server:create_admin_app"
 
-        typer.echo(f"🚀 Starting REACH Core public server on http://{host}:{public_port} ...")
+        typer.echo(f"🚀 Starting REACH Core public server on http://{effective_public_host}:{public_port} ...")
         typer.echo(f"📡 Public app: {public_target}")
-        typer.echo(f"🚀 Starting REACH Core admin server on http://{host}:{admin_port} ...")
+        typer.echo(f"🚀 Starting REACH Core admin server on http://{effective_admin_host}:{admin_port} ...")
         typer.echo(f"📡 Admin app: {admin_target}")
 
         def run_server(target: str, port_: int) -> None:
             uvicorn.run(
                 target,
-                host=host,
+                host=effective_public_host if target == public_target else effective_admin_host,
                 port=port_,
                 reload=reload,
                 log_level=log_level,

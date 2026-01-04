@@ -23,7 +23,7 @@ def build_routes_table(
     subcommands can expose static-only, dynamic-only, or combined views.
     """
     from base64 import b64decode
-    from reach.core.server import app as fastapi_app
+    from reach.core.server import create_admin_app
     from reach.core.db import SessionLocal, models
 
     table = Table(title="REACH Routes", show_lines=True)
@@ -38,6 +38,8 @@ def build_routes_table(
 
     # Static FastAPI routes
     if include_static:
+        # Build a fresh admin app to inspect its static routes
+        fastapi_app = create_admin_app()
         for route in fastapi_app.routes:
             methods = ", ".join(route.methods) if route.methods else ""
             base_row = [
