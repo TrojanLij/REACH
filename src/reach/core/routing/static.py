@@ -14,7 +14,6 @@ from ..api.logs import router as logs_router
 
 class RouteDebugSummary(TypedDict):
     """Shape of a route entry in the /debug/routes response."""
-
     id: int
     method: str
     path: str
