@@ -1,36 +1,60 @@
 """
 Registry for forge payload generators.
 
-Add a new generator module under this package. For families (xss, xxe), drop a
-module under the corresponding subpackage with a `generate` function and it
-will be auto-registered as `<family>_<module>`.
+Add a new generator module under this package (or under forge_plugins) with a
+`generate(**kwargs)` function and it will be auto-registered as
+`<family>_<module>`.
 """
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import os
+import pkgutil
 from pathlib import Path
 from typing import Callable, Dict
 
-from .xxe import XXE_REGISTRY
-from .xss import XSS_REGISTRY
-
-# base registry
+# kind -> callable
 REGISTRY: Dict[str, Callable[..., str]] = {}
 
-# include dynamically discovered generators
-REGISTRY.update(XSS_REGISTRY)
-REGISTRY.update(XXE_REGISTRY)
 
-# --- External plugin loader -------------------------------------------------
-# You can drop custom generators under:
-#   - $PWD/forge_plugins/<family>/<name>.py
-#   - $HOME/.reach/forge_plugins/<family>/<name>.py
-#   - any path in REACH_FORGE_PLUGIN_PATHS (os.pathsep-separated)
+def _register_from_package(package_name: str, kind_prefix: str) -> None:
+    """Discover modules in a package and register generate() as kind_prefix_<name>."""
+    try:
+        pkg = importlib.import_module(package_name)
+    except Exception:
+        return
+
+    pkg_paths = getattr(pkg, "__path__", [])
+    for mod in pkgutil.iter_modules(pkg_paths):
+        if mod.name.startswith("_"):
+            continue
+        module = importlib.import_module(f"{package_name}.{mod.name}")
+        fn = getattr(module, "generate", None)
+        if callable(fn):
+            kind = f"{kind_prefix}_{mod.name}"
+            REGISTRY[kind] = fn
+
+
+def _discover_internal() -> None:
+    """Auto-discover families under reach.forge.generators.*"""
+    base_pkg = __name__  # reach.forge.generators
+    base_path = Path(__file__).resolve().parent
+    for mod in pkgutil.iter_modules([str(base_path)]):
+        if not mod.ispkg or mod.name.startswith("_"):
+            continue
+        package_name = f"{base_pkg}.{mod.name}"
+        _register_from_package(package_name, mod.name)
 
 
 def _load_external_plugins() -> None:
+    """
+    Load generators from external plugin paths:
+      - $PWD/forge_plugins/<family>/<name>.py
+      - $HOME/.reach/forge_plugins/<family>/<name>.py
+      - any path in REACH_FORGE_PLUGIN_PATHS (os.pathsep-separated)
+    """
     roots = []
     env_paths = os.getenv("REACH_FORGE_PLUGIN_PATHS")
     if env_paths:
@@ -64,6 +88,7 @@ def _load_external_plugins() -> None:
                     continue
 
 
+_discover_internal()
 _load_external_plugins()
 
 __all__ = ["REGISTRY"]

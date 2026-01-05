@@ -114,6 +114,7 @@ The authors assume **no responsibility for misuse, misconfiguration, or unintend
 ### Forge
 - `forge payload --kind xss_basic --endpoint /xss --callback-url http://127.0.0.1:9000/beacon [--method GET] [--status 200] [--content-type text/html] [--dry-run] [--core-url http://127.0.0.1:8001]` - generate a payload and (unless `--dry-run`) create a dynamic route on the admin API to serve it.
 - `forge help [kind]` - list available payload kinds or show params/doc for a specific kind (e.g., `forge help xss_basic`).
+- Plugins: drop custom generators under `forge_plugins/<family>/<name>.py` (or `~/.reach/forge_plugins/...` or any path in `REACH_FORGE_PLUGIN_PATHS`). Each module exposing `generate(**kwargs)` auto-registers as `<family>_<name>` (e.g., `xss/gh0st.py` → `xss_gh0st`).
 
 ### Dev utilities
 - `dev reset-db [-y]` - drop and recreate all tables (destroys data).
@@ -125,6 +126,7 @@ This entire project is modular. *(I like to make life hard)*. So the logic for l
   - `REACH_DB_URL` - full SQLAlchemy URL; if set, overrides SQLite.
   - `REACH_DB_FILE` - path to SQLite file (used when no `REACH_DB_URL`).
   - `REACH_DB_ECHO=1` - enable SQLAlchemy echo for debugging.
+  - `REACH_FORGE_PLUGIN_PATHS=[]`
 
 ### Presets
 Presets are "project based" settings and used for quickly spinning up an instance. Not all config (.env) values can be set within the presets

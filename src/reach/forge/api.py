@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import inspect
 from typing import Dict, Any
 
 from .generators import REGISTRY
@@ -20,7 +21,16 @@ def generate_payload(kind: str, **kwargs) -> Payload:
     if kind not in REGISTRY:
         raise ValueError(f"Unknown payload kind: {kind!r}")
 
-    value = REGISTRY[kind](**kwargs)
+    fn = REGISTRY[kind]
+    sig = inspect.signature(fn)
+
+    # If the generator accepts **kwargs, pass everything; otherwise filter to known params.
+    if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+        call_kwargs = kwargs
+    else:
+        call_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+
+    value = fn(**call_kwargs)
     # Simple family grouping: everything before first "_" is family
     family = kind.split("_", 1)[0] if "_" in kind else kind
     return Payload(kind=kind, value=value, metadata={"family": family})
