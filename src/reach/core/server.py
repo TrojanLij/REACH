@@ -10,8 +10,12 @@ from .routing.static import register_static_routing
 
 
 def init_db() -> None:
-    """Initialize database schema (development convenience)."""
-    # Dev: auto-create tables. Later: migrations.
+    """
+    Initialize database schema.
+
+    Call this explicitly from the CLI or your own bootstrap code so that
+    app import does not have side effects.
+    """
     Base.metadata.create_all(bind=engine)
 
 
@@ -20,12 +24,14 @@ def create_public_app() -> FastAPI:
     Public-facing app: serves dynamic routes / payloads.
     Typically bound to a port like 8000.
     """
-    init_db()
-
     app = FastAPI(
         title="REACH Core (public)",
         description="Public server for dynamic routes / payloads",
         version="0.1.0",
+        docs_url="None",
+        redoc_url=None,
+        openapi_url=None,
+        # openapi_url="/openapi.json", # --> un-comment to test if the file is accidentally exposed
     )
 
     # Attach dynamic routing + logging middleware
@@ -39,12 +45,13 @@ def create_admin_app() -> FastAPI:
     Admin app: manage routes, view logs, etc.
     Typically bound to a port like 8001.
     """
-    init_db()
-
     app = FastAPI(
         title="REACH Core (admin)",
         description="Admin API for managing routes and logs",
         version="0.1.0",
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
+        openapi_url="/api/openapi.json",
     )
 
     # Attach static/admin routes (health, debug, CRUD APIs, logs)
@@ -61,9 +68,3 @@ def create_app() -> FastAPI:
     will get the public-facing application.
     """
     return create_public_app()
-
-
-# Default uvicorn entrypoint: public app
-public_app = create_public_app()
-admin_app = create_admin_app()
-app = public_app

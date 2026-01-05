@@ -15,9 +15,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-forge = []
-core = []
-cli = []
+forge = [
+    "pytest"
+]
+core = [
+    "pytest"
+]
+cli = [
+    "pytest"
+]
 
 [project.scripts]
 reach = "reach.cli.main:main"

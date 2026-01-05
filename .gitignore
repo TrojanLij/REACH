@@ -11,3 +11,7 @@
 TODO.md
 *.py
 /.venv_ubuntu
+
+.ipynb_checkpoints/
+.pytest_cache/
+.env
