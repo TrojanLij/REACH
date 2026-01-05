@@ -28,9 +28,10 @@ def create_public_app() -> FastAPI:
         title="REACH Core (public)",
         description="Public server for dynamic routes / payloads",
         version="0.1.0",
-        docs_url=None,
+        docs_url="None",
         redoc_url=None,
         openapi_url=None,
+        # openapi_url="/openapi.json", # --> un-comment to test if the file is accidentally exposed
     )
 
     # Attach dynamic routing + logging middleware

@@ -1,7 +1,7 @@
 """Database-backed request logging utilities for REACH Core."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 import json
 
@@ -30,8 +30,7 @@ class LoggedRequest(BaseModel):
     body: str | None = None
     body_encoding: str = "text"
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 def _mapping_to_json(value: Dict[str, str]) -> str:
@@ -73,7 +72,7 @@ def add_log(
     db = SessionLocal()
     try:
         entry = models.RequestLog(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             method=method,
             path=path,
             route_id=route_id,

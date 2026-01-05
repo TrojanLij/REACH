@@ -11,5 +11,8 @@
         },
         "reload": false,
         "log_level": "info"
+    },
+    "db": {
+      "echo": true
     }
 }

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -9,7 +10,6 @@ import typer
 import uvicorn
 
 from . import app
-from reach.core.server import init_db
 
 # Defaults for detecting user overrides vs. preset
 DEFAULT_HOST = "127.0.0.1"
@@ -90,6 +90,7 @@ def start_server(
     server_cfg = preset_data.get("server", {}) if isinstance(preset_data.get("server", {}), dict) else {}
     public_cfg = server_cfg.get("public", {}) if isinstance(server_cfg.get("public", {}), dict) else {}
     admin_cfg = server_cfg.get("admin", {}) if isinstance(server_cfg.get("admin", {}), dict) else {}
+    db_cfg = preset_data.get("db", {}) if isinstance(preset_data.get("db", {}), dict) else {}
 
     # Start with defaults
     effective_public_host = public_cfg.get("host", server_cfg.get("host", DEFAULT_HOST))
@@ -124,6 +125,17 @@ def start_server(
 
     if role not in {"public", "admin", "both"}:
         raise typer.BadParameter("role must be 'public', 'admin', or 'both'")
+
+    # Apply DB config from preset (highest priority), before init_db()
+    if "url" in db_cfg:
+        os.environ["REACH_DB_URL"] = str(db_cfg["url"])
+    elif "file" in db_cfg:
+        os.environ["REACH_DB_FILE"] = str(db_cfg["file"])
+    if "echo" in db_cfg:
+        os.environ["REACH_DB_ECHO"] = "1" if db_cfg["echo"] else "0"
+
+    # Import after applying DB env overrides so engine uses the updated settings
+    from reach.core.server import init_db
 
     # Explicit DB init so app import has no side effects
     init_db()

@@ -127,6 +127,10 @@ The authors assume **no responsibility for misuse, misconfiguration, or unintend
       "admin": {"host": "0.0.0.0", "port": 8080},
       "reload": false,
       "log_level": "info"
+    },
+    "db": {
+      "url": "sqlite:///./reach_core.db",
+      "echo": false
     }
   }
   ```

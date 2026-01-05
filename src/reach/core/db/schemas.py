@@ -47,5 +47,4 @@ class RouteOut(RouteBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True  # Pydantic v2 / FastAPI 0.111+
+    model_config = {"from_attributes": True}
