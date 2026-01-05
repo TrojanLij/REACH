@@ -111,6 +111,10 @@ The authors assume **no responsibility for misuse, misconfiguration, or unintend
 ### Logs
 - `logs tail [--core-url http://127.0.0.1:8000] [--interval 1.0] [--once] [--regex "..."]` - poll `/api/logs` and stream matching entries.
 
+### Forge
+- `forge payload --kind xss_basic --endpoint /xss --callback-url http://127.0.0.1:9000/beacon [--method GET] [--status 200] [--content-type text/html] [--dry-run] [--core-url http://127.0.0.1:8001]` - generate a payload and (unless `--dry-run`) create a dynamic route on the admin API to serve it.
+- `forge help [kind]` - list available payload kinds or show params/doc for a specific kind (e.g., `forge help xss_basic`).
+
 ### Dev utilities
 - `dev reset-db [-y]` - drop and recreate all tables (destroys data).
 - `dev clear-logs` - wipe request logs.
