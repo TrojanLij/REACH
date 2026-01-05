@@ -17,6 +17,7 @@ DEFAULT_PORT = 8000
 DEFAULT_ROLE = "public"
 DEFAULT_RELOAD = False
 DEFAULT_LOG_LEVEL = "info"
+DOTENV_PATH = Path(".env")
 
 
 def _load_preset(path: Path) -> Dict[str, Any]:
@@ -34,6 +35,29 @@ def _load_preset(path: Path) -> Dict[str, Any]:
         raise typer.BadParameter("Preset 'server' must be an object")
 
     return data
+
+
+def _load_dotenv(path: Path = DOTENV_PATH) -> None:
+    """
+    Minimal .env loader.
+
+    Only sets variables that are not already defined in the environment,
+    so real env vars still take precedence.
+    """
+    if not path.exists():
+        return
+
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
 
 
 @app.command("start")
@@ -82,6 +106,9 @@ def start_server(
     import uvicorn
     from multiprocessing import Process
 
+    # Load .env first (highest priority after real env vars)
+    _load_dotenv()
+
     preset_data: Dict[str, Any] = {}
     if preset:
         preset_data = _load_preset(preset)
@@ -126,7 +153,7 @@ def start_server(
     if role not in {"public", "admin", "both"}:
         raise typer.BadParameter("role must be 'public', 'admin', or 'both'")
 
-    # Apply DB config from preset (highest priority), before init_db()
+    # Apply DB config from preset (override .env/env, but CLI flags still win later)
     if "url" in db_cfg:
         os.environ["REACH_DB_URL"] = str(db_cfg["url"])
     elif "file" in db_cfg:

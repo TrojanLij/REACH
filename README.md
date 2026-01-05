@@ -1,14 +1,12 @@
 # REACH
 
-**R.E.A.C.H. — Request Engine for Attacks, Callbacks & Handling**
+**R.E.A.C.H. - Request Engine for Attacks, Callbacks & Handling**
 
 REACH is a lightweight, extensible web exploitation framework designed for penetration testers and security researchers. It provides a dynamic routing core that allows operators to create, modify, and remove HTTP routes at runtime without restarting the service, making it well suited for live assessments and collaborative testing environments.
 
 REACH is an external tooling framework designed to enable penetration testers to rapidly deploy web-accessible assets for testing external callbacks, out-of-band interactions, and externally loaded payloads during external penetration tests and web application security assessments.
 
 The project is built around a FastAPI-based core with a Typer-powered CLI, enabling both programmatic embedding and standalone operation. REACH separates public-facing traffic handling from administrative control surfaces, allowing testers to expose payload endpoints in a controlled manner while retaining full control over route management, request logging, and analysis.
-
-REACH is intentionally minimal and portable, prioritizing ease of deployment, predictable behavior, and composability. It is designed to support more advanced workflows such as payload templating, out-of-band callbacks, traffic correlation, and collaborative analysis, while remaining useful as a standalone routing and logging tool.
 
 The framework is intended for authorized security testing only and is built to integrate into existing toolchains and assessment workflows with minimal friction.
 
@@ -96,7 +94,7 @@ The authors assume **no responsibility for misuse, misconfiguration, or unintend
 
 ## CLI
 - Preferred (via uv / console script): `reach server start --role both` (or `reach ...` for other subcommands).
-- Alternative module entry: `python -m reach.cli.main ...` (same commands/flags).
+- Alternative module entry: `python -m reach.cli.main server ...` (same commands/flags).
 
 ### Server
 - `server start [--host 0.0.0.0] [--port 8000] [--role public|admin|both] [--port-public N] [--port-admin N] [--reload] [--log-level info]`
@@ -106,18 +104,26 @@ The authors assume **no responsibility for misuse, misconfiguration, or unintend
   - `role=both`: runs public on `--port-public` (or `--port`), admin on `--port-admin` (or `--port+1`).
 
 ### Routes
-- `routes list [--show-body] [--full-body] [--decode/--raw]` — list all static + dynamic routes.
-- `routes static` — list only static FastAPI routes.
-- `routes dynamic [--show-body] [--full-body] [--decode/--raw]` — list DB-backed routes.
+- `routes list [--show-body] [--full-body] [--decode/--raw]` - list all static + dynamic routes.
+- `routes static` - list only static FastAPI routes.
+- `routes dynamic [--show-body] [--full-body] [--decode/--raw]` - list DB-backed routes.
 
 ### Logs
-- `logs tail [--core-url http://127.0.0.1:8000] [--interval 1.0] [--once] [--regex "..."]` — poll `/api/logs` and stream matching entries.
+- `logs tail [--core-url http://127.0.0.1:8000] [--interval 1.0] [--once] [--regex "..."]` - poll `/api/logs` and stream matching entries.
 
 ### Dev utilities
-- `dev reset-db [-y]` — drop and recreate all tables (destroys data).
-- `dev clear-logs` — wipe request logs.
+- `dev reset-db [-y]` - drop and recreate all tables (destroys data).
+- `dev clear-logs` - wipe request logs.
+
+## Configuration (env)
+This entire project is modular. *(I like to make life hard)*. So the logic for loading values / value priority is as follows: CLI flags > preset > env/.env > defaults ("hardcoded").
+- `.env` at repo root is loaded automatically as a fallback; presets and CLI flags can override values from env/.env. Within the .env you can set the following:
+  - `REACH_DB_URL` - full SQLAlchemy URL; if set, overrides SQLite.
+  - `REACH_DB_FILE` - path to SQLite file (used when no `REACH_DB_URL`).
+  - `REACH_DB_ECHO=1` - enable SQLAlchemy echo for debugging.
 
 ### Presets
+Presets are "project based" settings and used for quickly spinning up an instance. Not all config (.env) values can be set within the presets
 - You can pass a JSON preset to `reach server start` to avoid long flag lists:
   ```json
   {
@@ -136,11 +142,6 @@ The authors assume **no responsibility for misuse, misconfiguration, or unintend
   ```
   Run: `reach server start --preset ./my-preset.json`
   - CLI flags still override the preset when provided (e.g., `--port-public`).
-
-## Configuration (env)
-- `REACH_DB_URL` — full SQLAlchemy URL; if set, overrides SQLite.
-- `REACH_DB_FILE` — path to SQLite file (used when no `REACH_DB_URL`).
-- `REACH_DB_ECHO=1` — enable SQLAlchemy echo for debugging.
 
 ## Minimal local run
 ```bash
@@ -178,3 +179,6 @@ python -m reach.cli.main logs tail --core-url http://127.0.0.1:8001 --once
 - Auth has not been implemented (yet). Protect the admin app (`/api/logs`, `/api/routes`, `/debug/routes`) via network controls or auth; the public app blocks `/api/*` and `/debug/*` but does not enforce auth itself. 
 - On a fresh database, run `reach server start` (or call `init_db()`) before `reach routes ...` so the schema exists.
 - Dynamic routing currently reserves `/api/*` and `/debug/*`; tighten the reserved prefixes if you need to block docs endpoints (`/docs`, `/openapi.json`, `/redoc`, `/favicon.ico`) on the public app.
+
+## Known issues:
+- **reach.logs** does not always show the correct IP address of the asset calling the route. In our testing environment we noticed this when using Cloudflare tunel via docker to expose the public app to the world. 
