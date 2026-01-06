@@ -86,24 +86,30 @@ REACH is designed to be deployed **temporarily and in a controlled environment**
 
 The authors assume **no responsibility for misuse, misconfiguration, or unintended exposure**. Users are solely responsible for ensuring they have explicit authorization to deploy and operate REACH and that it is used in compliance with applicable laws, contracts, and engagement scopes.
 
+# Structure
+This project is highly modular with and is comprised of the following components.
+
 ## Core (FastAPI apps)
+As the name intales' this is the core of the project. Everything revolves round this:
 - Factories: `reach.core.server:create_public_app` (dynamic routes) and `reach.core.server:create_admin_app` (admin APIs/logs). Import the factories and compose them; nothing runs at import time.
 - DB init: call `reach.core.server.init_db()` once per run (the CLI does this for you) to create tables. Backed by SQLite by default, override with `REACH_DB_URL` or `REACH_DB_FILE`.
 - Admin APIs (admin app): `/api/routes` (CRUD dynamic routes), `/api/logs` (stream request logs), `/api/health`, `/debug/routes`. Protect or keep separate from the public app.
 - Public app: catch-all dynamic router serving DB-backed routes; blocks reserved prefixes (`/api/*`, `/debug/*`).
 
 ## CLI
+So not everything needs to be done via the admin api
 - Preferred (via uv / console script): `reach server start --role both` (or `reach ...` for other subcommands).
 - Alternative module entry: `python -m reach.cli.main server ...` (same commands/flags).
 
 ### Server
+Using the CLI, you can spin up the core as an HTTP server:
 - `server start [--host 0.0.0.0] [--port 8000] [--role public|admin|both] [--port-public N] [--port-admin N] [--reload] [--log-level info]`
-  - Uses the FastAPI factories via uvicorn factory mode and calls `init_db()` before boot.
-  - `role=public` (default): dynamic routes on `--port`.
-  - `role=admin`: admin APIs on `--port`.
-  - `role=both`: runs public on `--port-public` (or `--port`), admin on `--port-admin` (or `--port+1`).
+- `role=public` (default): dynamic routes on `--port`.
+- `role=admin`: admin APIs on `--port`.
+- `role=both`: runs public on `--port-public` (or `--port`), admin on `--port-admin` (or `--port+1`).
 
 ### Routes
+From the CLI you can see what routes are available to use.
 - `routes list [--show-body] [--full-body] [--decode/--raw]` - list all static + dynamic routes.
 - `routes static` - list only static FastAPI routes.
 - `routes dynamic [--show-body] [--full-body] [--decode/--raw]` - list DB-backed routes.
