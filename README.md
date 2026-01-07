@@ -118,8 +118,8 @@ From the CLI you can see what routes are available to use.
 - `logs tail [--core-url http://127.0.0.1:8000] [--interval 1.0] [--once] [--regex "..."]` - poll `/api/logs` and stream matching entries.
 
 ### Forge
-- `forge payload --kind xss_basic --endpoint /xss --callback-url http://127.0.0.1:9000/beacon [--method GET] [--status 200] [--content-type text/html] [--dry-run] [--core-url http://127.0.0.1:8001]` - generate a payload and (unless `--dry-run`) create a dynamic route on the admin API to serve it.
-- `forge help [kind]` - list available payload kinds or show params/doc for a specific kind (e.g., `forge help xss_basic`).
+- `forge --list [--kind xss_basic]` - list available payload kinds or show params/doc for a specific kind.
+- `forge payload new xss_basic --endpoint /xss --payload-kwarg callback_url=http://127.0.0.1:9000/beacon [--method GET] [--status 200] [--content-type text/html] [--dry-run] [--core-url http://127.0.0.1:8001]` - generate a payload and (unless `--dry-run`) create a dynamic route on the admin API to serve it.
 - Plugins: drop custom generators under `forge_plugins/<family>/<name>.py` (or `~/.reach/forge_plugins/...` or any path in `REACH_FORGE_PLUGIN_PATHS`). Each module exposing `generate(**kwargs)` auto-registers as `<family>_<name>` (e.g., `xss/gh0st.py` → `xss_gh0st`).
 
 ### Dev utilities

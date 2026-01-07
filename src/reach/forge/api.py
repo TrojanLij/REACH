@@ -24,6 +24,18 @@ def generate_payload(kind: str, **kwargs) -> Payload:
     fn = REGISTRY[kind]
     sig = inspect.signature(fn)
 
+    required_params = [
+        name
+        for name, param in sig.parameters.items()
+        if param.default is inspect._empty
+        and param.kind
+        in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+    ]
+    missing = [name for name in required_params if name not in kwargs]
+    if missing:
+        missing_list = ", ".join(missing)
+        raise ValueError(f"Missing required payload params: {missing_list}")
+
     # If the generator accepts **kwargs, pass everything; otherwise filter to known params.
     if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
         call_kwargs = kwargs

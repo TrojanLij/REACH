@@ -28,6 +28,7 @@ def build_routes_table(
 
     table = Table(title="REACH Routes", show_lines=True)
     table.add_column("Type", style="cyan", no_wrap=True)
+    table.add_column("Route ID", style="yellow")
     table.add_column("Method", style="green")
     table.add_column("Path", style="magenta")
     table.add_column("Status", style="yellow")
@@ -44,6 +45,7 @@ def build_routes_table(
             methods = ", ".join(route.methods) if route.methods else ""
             base_row = [
                 "STATIC",
+                "-",
                 methods,
                 route.path,
                 "-",
@@ -61,6 +63,7 @@ def build_routes_table(
             for r in db_routes:
                 base_row = [
                     "DYNAMIC",
+                    str(r.id),
                     r.method,
                     "/" + r.path,
                     str(r.status_code),
