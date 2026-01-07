@@ -3,11 +3,11 @@
         "role": "both",
         "public": {
             "host": "0.0.0.0",
-            "port": 8000
+            "port": 9000
         },
         "admin": {
             "host": "0.0.0.0",
-            "port": 8080
+            "port": 8001
         },
         "reload": false,
         "log_level": "info"
