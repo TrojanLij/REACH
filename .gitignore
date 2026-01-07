@@ -3,6 +3,12 @@
 /build/*
 /src/reach.egg-info
 
+.venv_ubuntu/
+.ipynb_checkpoints/
+.pytest_cache/
+
+
+
 # file types
 *.pyc
 *.db
@@ -10,9 +16,5 @@ __pycache__
 
 # Specific files
 TODO.md
-*.py
-/.venv_ubuntu
-
-.ipynb_checkpoints/
-.pytest_cache/
 .env
+.editorconfig
