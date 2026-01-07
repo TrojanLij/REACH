@@ -6,6 +6,7 @@
 # file types
 *.pyc
 *.db
+__pycache__
 
 # Specific files
 TODO.md
