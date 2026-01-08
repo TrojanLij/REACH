@@ -103,10 +103,11 @@ So not everything needs to be done via the admin api
 
 ### Server
 Using the CLI, you can spin up the core as an HTTP server:
-- `server start [--host 0.0.0.0] [--port 8000] [--role public|admin|both] [--port-public N] [--port-admin N] [--reload] [--log-level info]`
+- `server start [--host 0.0.0.0] [--port 8000] [--role public|admin|both] [--port-public N] [--port-admin N] [--reload] [--log-level info] [--docker] [--image reach:local] [--name NAME] [--dockerfile Dockerfile] [--context .] [--rebuild/--no-rebuild] [--detach/--no-detach]`
 - `role=public` (default): dynamic routes on `--port`.
 - `role=admin`: admin APIs on `--port`.
 - `role=both`: runs public on `--port-public` (or `--port`), admin on `--port-admin` (or `--port+1`).
+- `--docker`: builds (if missing) and runs the server inside a container. The command/ports are passed at runtime; no bind-mounts are required.
 
 ### Routes
 From the CLI you can see what routes are available to use.
@@ -154,6 +155,7 @@ Presets are "project based" settings and used for quickly spinning up an instanc
   ```
   Run: `reach server start --preset ./my-preset.json`
   - CLI flags still override the preset when provided (e.g., `--port-public`).
+  - When using `--docker`, the preset is copied into the container and used from `/app/presets/<file>.json`.
 
 ## Minimal local run
 ```bash

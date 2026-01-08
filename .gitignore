@@ -6,7 +6,7 @@
 .venv_ubuntu/
 .ipynb_checkpoints/
 .pytest_cache/
-
+.vscode/
 
 
 # file types
@@ -18,3 +18,4 @@ __pycache__
 TODO.md
 .env
 .editorconfig
+Dockerfile
