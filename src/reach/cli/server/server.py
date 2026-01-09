@@ -268,6 +268,11 @@ def start_server(
     ),
     reload: bool = typer.Option(False, "--reload/--no-reload", help="Auto-reload on file change"),
     log_level: str = typer.Option("info", "--log-level", help="Log level (debug, info, warning, error)"),
+    protocol: str = typer.Option(
+        "http",
+        "--protocol",
+        help="Public protocol to serve (e.g. http). Ignored for role=admin.",
+    ),
     role: str = typer.Option(
         "public",
         "--role",
@@ -293,6 +298,7 @@ def start_server(
     - role=both: public on --port, admin on --port+1
     """
     import uvicorn
+    import importlib
     from multiprocessing import Process
 
     # Load .env first (highest priority after real env vars)
@@ -322,7 +328,19 @@ def start_server(
 
         selected_host = config["public_host"] if role != "admin" else config["admin_host"]
         docker_host = _container_host(selected_host)
-        cmd = ["reach", "server", "start", "--host", docker_host, "--role", role, "--log-level", config["log_level"]]
+        cmd = [
+            "reach",
+            "server",
+            "start",
+            "--host",
+            docker_host,
+            "--role",
+            role,
+            "--log-level",
+            config["log_level"],
+            "--protocol",
+            protocol,
+        ]
         if config["reload"]:
             cmd.append("--reload")
         if role in {"public", "admin"}:
@@ -388,10 +406,18 @@ def start_server(
         return
 
     # Import after applying DB env overrides so engine uses the updated settings
-    from reach.core.server import init_db
+    from reach.core.protocols import get_protocol
+    from reach.core.server import init_db as core_init_db
 
     # Explicit DB init so app import has no side effects
-    init_db()
+    protocol_entry = None
+    # Always ensure core tables exist before starting any protocol.
+    core_init_db()
+    if role != "admin":
+        importlib.import_module(f"reach.core.protocols.{protocol}.server")
+        protocol_entry = get_protocol(protocol)
+        if protocol_entry.init_db:
+            protocol_entry.init_db()
 
     role = config["role"]
     reload = config["reload"]
@@ -402,31 +428,49 @@ def start_server(
     admin_port = config["admin_port"]
 
     if role in {"public", "admin"}:
-        target = "reach.core.server:create_public_app" if role == "public" else "reach.core.server:create_admin_app"
+        if role == "public":
+            if protocol_entry is None:
+                importlib.import_module(f"reach.core.protocols.{protocol}.server")
+                protocol_entry = get_protocol(protocol)
+            target = protocol_entry.public_app
+        else:
+            target = "reach.core.server:create_admin_app"
         effective_port = public_port if role == "public" else admin_port
         effective_host = effective_public_host if role == "public" else effective_admin_host
 
-        typer.echo(f"🚀 Starting REACH Core {role} server on http://{effective_host}:{effective_port} ...")
+        scheme = "http"
+        if role == "public" and protocol_entry:
+            scheme = protocol_entry.name
+        typer.echo(f"🚀 Starting REACH Core {role} server on {scheme}://{effective_host}:{effective_port} ...")
         typer.echo(f"📡 App: {target}")
 
-        uvicorn.run(
-            target,
-            host=effective_host,
-            port=effective_port,
-            reload=reload,
-            log_level=log_level,
-            factory=True,
-        )
+        if role == "public" and protocol_entry and protocol_entry.server_type != "asgi":
+            protocol_entry.run(effective_host, effective_port)
+        else:
+            uvicorn.run(
+                target,
+                host=effective_host,
+                port=effective_port,
+                reload=reload,
+                log_level=log_level,
+                factory=True,
+            )
     else:
-        public_target = "reach.core.server:create_public_app"
+        importlib.import_module(f"reach.core.protocols.{protocol}.server")
+        protocol_entry = get_protocol(protocol)
+        public_target = protocol_entry.public_app
         admin_target = "reach.core.server:create_admin_app"
 
-        typer.echo(f"🚀 Starting REACH Core public server on http://{effective_public_host}:{public_port} ...")
+        public_scheme = protocol_entry.name
+        typer.echo(f"🚀 Starting REACH Core public server on {public_scheme}://{effective_public_host}:{public_port} ...")
         typer.echo(f"📡 Public app: {public_target}")
         typer.echo(f"🚀 Starting REACH Core admin server on http://{effective_admin_host}:{admin_port} ...")
         typer.echo(f"📡 Admin app: {admin_target}")
 
         def run_server(target: str, port_: int) -> None:
+            if target == public_target and protocol_entry.server_type != "asgi":
+                protocol_entry.run(effective_public_host, port_)
+                return
             uvicorn.run(
                 target,
                 host=effective_public_host if target == public_target else effective_admin_host,

@@ -12,8 +12,9 @@ router = APIRouter(prefix="/api/logs", tags=["logs"])
 def list_logs(
     since_id: int = 0,
     limit: int = 100,
+    protocol: str | None = None,
 ):
     """
     Return logs with id > since_id (for streaming / tailing).
     """
-    return get_logs_since(since_id, limit)
+    return get_logs_since(since_id, limit, protocol)

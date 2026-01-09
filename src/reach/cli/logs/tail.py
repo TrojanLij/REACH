@@ -34,6 +34,11 @@ def tail_logs(
         "--regex",
         help="Only show log entries where this regex matches (method/path/status/ip/host/body).",
     ),
+    protocol: str | None = typer.Option(
+        None,
+        "--protocol",
+        help="Only show log entries for this protocol (e.g. http, ftp).",
+    ),
 ) -> None:
     """
     Stream inbound requests (and status) from REACH Core, like `tail -f`.
@@ -58,7 +63,7 @@ def tail_logs(
             try:
                 resp = client.get(
                     "/api/logs",
-                    params={"since_id": last_id, "limit": 200},
+                    params={"since_id": last_id, "limit": 200, "protocol": protocol},
                     headers={"REACHTailLogServer": "True"},
                 )
                 resp.raise_for_status()
@@ -76,25 +81,31 @@ def tail_logs(
                         last_id = entry["id"]
 
                     ts = entry["timestamp"]
+                    proto = entry.get("protocol") or "http"
                     method = entry["method"]
                     path = entry["path"]
+                    # command = entry.get("command") or "-"
                     status = entry.get("status_code")
                     route_id = entry.get("route_id")
                     client_ip = entry.get("client_ip") or "-"
                     host = entry.get("host") or "-"
                     body = entry.get("body") or ""
+                    raw_bytes = entry.get("raw_bytes") or ""
                     query_params = entry.get("query_params") or {}
 
                     text_for_match = " ".join(
                         str(x)
                         for x in [
+                            proto,
                             method,
                             path,
+                            # command,
                             status,
                             route_id,
                             client_ip,
                             host,
                             body,
+                            raw_bytes,
                         ]
                     )
 
@@ -104,21 +115,30 @@ def tail_logs(
                     console.print(
                         f"[bold]{entry['id']:>5}[/bold] "
                         f"[dim]{ts}[/dim] "
+                        f"[blue]{proto:<5}[/blue] "
                         f"[green]{method:<6}[/green] "
                         f"{path} "
+                        # f"(cmd={command}) "
                         f"-> [yellow]{status}[/yellow] "
                         f"(route_id={route_id}, ip={client_ip}, host={host})"
                     )
 
                     # For GET requests, also show query parameters (if any)
                     if method.upper() == "GET" and isinstance(query_params, dict) and query_params:
+                        console.print("\tQuery:")
                         for key, value in query_params.items():
                             console.print(f"\t{key}={value}")
 
                     # For POST/PUT/PATCH, show body (if any)
                     if method.upper() in {"POST", "PUT", "PATCH"} and body:
-                        console.print("\t[body]")
+                        console.print("\tBody:")
                         for line in str(body).splitlines():
+                            console.print(f"\t{line}")
+                    
+                    # For raw bytes in body (if not http)
+                    if proto.lower() != "http" and raw_bytes:
+                        console.print("\tRaw Bytes:")
+                        for line in str(raw_bytes).splitlines():
                             console.print(f"\t{line}")
 
             if once:
