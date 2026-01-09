@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import time
 import re
-
 import httpx
 import typer
 from rich.console import Console
