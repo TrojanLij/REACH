@@ -38,8 +38,10 @@ class RequestLog(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    protocol = Column(String(16), nullable=False, default="http")
     method = Column(String(10), nullable=False)
     path = Column(String(255), nullable=False)
+    command = Column(String(32), nullable=True)
     route_id = Column(Integer, nullable=True)
     status_code = Column(Integer, nullable=True)
     client_ip = Column(String(45), nullable=True)
@@ -52,3 +54,6 @@ class RequestLog(Base):
     body = Column(Text, nullable=True)
     # Encoding of the stored body field. Currently always "text".
     body_encoding = Column(String(16), nullable=False, default="text")
+    # Raw payload bytes for non-HTTP protocols (stored as text or base64).
+    raw_bytes = Column(Text, nullable=True)
+    raw_bytes_encoding = Column(String(16), nullable=False, default="none")

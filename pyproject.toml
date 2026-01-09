@@ -1,9 +1,10 @@
 [project]
 name = "reach"
-version = "0.1.0"
+version = "0.1.3"
 description = "REACH web exploitation framework"
 requires-python = ">=3.12"
 dependencies = [
+    "docker",
     "fastapi",
     "uvicorn",
     "sqlalchemy",
