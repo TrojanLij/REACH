@@ -54,6 +54,7 @@ REACH is designed to provide fine-grained control over external, tester-controll
 - Log headers, query parameters, and request metadata for analysis
 - Logging can be used to observe and correlate outbound application behavior during testing
 - Supports controlled collection of interaction data within the scope of an authorized engagement
+  - *Not all data is being collected (at this time) -> example, files won't be collected (saved)... yet...*
 
 ### Separation of Concerns
 - Public-facing routes are isolated from administrative control surfaces
@@ -86,30 +87,33 @@ REACH is designed to be deployed **temporarily and in a controlled environment**
 
 The authors assume **no responsibility for misuse, misconfiguration, or unintended exposure**. Users are solely responsible for ensuring they have explicit authorization to deploy and operate REACH and that it is used in compliance with applicable laws, contracts, and engagement scopes.
 
-# Structure
-This project is highly modular with and is comprised of the following components.
+Be smart. We are pen-testers. Don't give us a bad wrap.
 
-## Core (FastAPI apps)
+# Structure
+This project is highly modular.
+
+## Core
 As the name intales' this is the core of the project. Everything revolves round this:
 - Factories: `reach.core.server:create_public_app` (dynamic routes) and `reach.core.server:create_admin_app` (admin APIs/logs). Import the factories and compose them; nothing runs at import time.
-- DB init: call `reach.core.server.init_db()` once per run (the CLI does this for you) to create tables. Backed by SQLite by default, override with `REACH_DB_URL` or `REACH_DB_FILE`.
+- DB init: call `reach.core.server.init_db()` once per run (the CLI does this for you) to create tables. Backed by SQLite by default.
 - Admin APIs (admin app): `/api/routes` (CRUD dynamic routes), `/api/logs` (stream request logs), `/api/health`, `/debug/routes`. Protect or keep separate from the public app.
 - Public app: catch-all dynamic router serving DB-backed routes; blocks reserved prefixes (`/api/*`, `/debug/*`).
 - Protocols: HTTP (ASGI), FTP (TCP capture), WSS (WebSocket/ASGI). Public protocol selection is pluggable through the CLI and presets.
 - Shared helpers: `reach.core.random_id()` / `random_string()` for quick identifiers, and `reach.core.RESERVED_PREFIXES` for global reserved path control.
 
 ## CLI
-So not everything needs to be done via the admin api
+Main method of interacting with the project.
 - Preferred (via uv / console script): `reach server start --role both` (or `reach ...` for other subcommands).
 - Alternative module entry: `python -m reach.cli.main server ...` (same commands/flags).
 
 ### Server
-Using the CLI, you can spin up the core as an HTTP server:
+Using the CLI, you can spin up the core as server:
 - `server start [--host 0.0.0.0] [--port 8000] [--role public|admin|both] [--port-public N] [--port-admin N] [--reload] [--log-level info] [--docker] [--image reach:local] [--name NAME] [--dockerfile Dockerfile] [--context .] [--rebuild/--no-rebuild] [--detach/--no-detach]`
 - `role=public` (default): dynamic routes on `--port`.
 - `role=admin`: admin APIs on `--port`.
 - `role=both`: runs public on `--port-public` (or `--port`), admin on `--port-admin` (or `--port+1`).
 - `--docker`: builds (if missing) and runs the server inside a container. The command/ports are passed at runtime; no bind-mounts are required.
+- Protocols: HTTP, FTP, and WS are built-in. CLI `--protocol` targets a single public protocol; presets can define multiple protocol blocks to launch one public server per protocol (admin stays HTTP).
 
 ### Routes
 From the CLI you can see what routes are available to use.
@@ -147,7 +151,6 @@ Presets are "project based" settings and used for quickly spinning up an instanc
       "ftp":  { "host": "0.0.0.0", "port": 2121 },
       "wss":  { "host": "0.0.0.0", "port": 8443 },
       "role": "both",
-      "reload": false,
       "log_level": "info",
       "protocol": "http"   // default when only one protocol is used
     },
