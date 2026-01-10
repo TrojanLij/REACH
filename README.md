@@ -95,6 +95,8 @@ As the name intales' this is the core of the project. Everything revolves round 
 - DB init: call `reach.core.server.init_db()` once per run (the CLI does this for you) to create tables. Backed by SQLite by default, override with `REACH_DB_URL` or `REACH_DB_FILE`.
 - Admin APIs (admin app): `/api/routes` (CRUD dynamic routes), `/api/logs` (stream request logs), `/api/health`, `/debug/routes`. Protect or keep separate from the public app.
 - Public app: catch-all dynamic router serving DB-backed routes; blocks reserved prefixes (`/api/*`, `/debug/*`).
+- Protocols: HTTP (ASGI), FTP (TCP capture), WSS (WebSocket/ASGI). Public protocol selection is pluggable through the CLI and presets.
+- Shared helpers: `reach.core.random_id()` / `random_string()` for quick identifiers, and `reach.core.RESERVED_PREFIXES` for global reserved path control.
 
 ## CLI
 So not everything needs to be done via the admin api
@@ -136,17 +138,20 @@ This entire project is modular. *(I like to make life hard)*. So the logic for l
   - `REACH_FORGE_PLUGIN_PATHS=[]`
 
 ### Presets
-Presets are "project based" settings and used for quickly spinning up an instance. Not all config (.env) values can be set within the presets
+Presets are "project based" settings and used for quickly spinning up an instance. Not all config (.env) values can be set within the presets.
 - You can pass a JSON preset to `reach server start` to avoid long flag lists:
   ```json
   {
     "server": {
+      "http": { "host": "0.0.0.0", "port": 9000 },
+      "ftp":  { "host": "0.0.0.0", "port": 2121 },
+      "wss":  { "host": "0.0.0.0", "port": 8443 },
       "role": "both",
-      "public": {"host": "0.0.0.0", "port": 8000},
-      "admin": {"host": "0.0.0.0", "port": 8080},
       "reload": false,
-      "log_level": "info"
+      "log_level": "info",
+      "protocol": "http"   // default when only one protocol is used
     },
+    "admin": { "host": "0.0.0.0", "port": 8001 },
     "db": {
       "url": "sqlite:///./reach_core.db",
       "echo": false
@@ -154,7 +159,8 @@ Presets are "project based" settings and used for quickly spinning up an instanc
   }
   ```
   Run: `reach server start --preset ./my-preset.json`
-  - CLI flags still override the preset when provided (e.g., `--port-public`).
+  - When multiple protocol blocks are present, the preset starts one public server per protocol (plus a single admin server).
+  - CLI flags still override the preset when provided for single-protocol runs (multi-protocol runs use the preset-defined ports/hosts).
   - When using `--docker`, the preset is copied into the container and used from `/app/presets/<file>.json`.
 
 ## Minimal local run

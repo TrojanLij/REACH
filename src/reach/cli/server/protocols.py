@@ -12,7 +12,7 @@ from reach.core.protocols import list_protocols
 
 
 def _load_protocol_modules() -> None:
-    for name in ("http", "ftp"):
+    for name in ("http", "ftp", "wss"):
         importlib.import_module(f"reach.core.protocols.{name}.server")
 
 

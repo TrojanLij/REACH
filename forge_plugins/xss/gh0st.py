@@ -10,6 +10,8 @@ def generate(
     """
     Gh0st XSS payload to execute commands.
     
+    Author: @gh0st
+
     Params:
     - tags: If true, wrap the payload in <script></script> tags.
     - command: Optional but if you pass it, it will auto execute the command. If you do not pass it you should be able to still call it on the compromised ap by calling `fn(\"Your-Command\")`.

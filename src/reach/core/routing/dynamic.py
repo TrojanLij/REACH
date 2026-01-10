@@ -11,21 +11,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db, models
+from ..globals import RESERVED_PREFIXES
 from .. import logging as reach_logging
-
 
 DYNAMIC_HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 # Paths that should bypass the public dynamic router (admin/docs/static)
-RESERVED_PREFIXES = (
-    "api/",
-    "debug/",
-    "docs",
-    "docs/",
-    "openapi.json",
-    "redoc",
-    "redoc/",
-    "favicon.ico",
-)
 DEFAULT_BODY_ENCODING = "none"
 
 

@@ -55,7 +55,7 @@ def create_payload_route(
         None,
         "--payload-kwarg",
         "--payload-kwargs",
-        help="Payload-specific args as KEY=VALUE (repeatable; later duplicates win).",
+        help="Payload-specific args as KEY=VALUE.",
     ),
 ) -> None:
     """

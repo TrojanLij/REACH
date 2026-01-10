@@ -1,17 +1,23 @@
 {
     "server": {
-        "role": "both",
-        "public": {
+        "http": {
             "host": "0.0.0.0",
             "port": 9000
         },
-        "admin": {
-            "host": "0.0.0.0",
-            "port": 8001
+        "ftp":{
+            "host":"0.0.0.0",
+            "port":"2121"
         },
-        "reload": false,
-        "log_level": "info"
+        "wss":{
+            "host":"0.0.0.0",
+            "port":"8443"
+        }
     },
+    "admin": {
+        "host": "0.0.0.0",
+        "port": 8001
+    },
+    "log_level": "info",
     "db": {
       "echo": true
     }

@@ -20,6 +20,7 @@ DEFAULT_PORT = 8000
 DEFAULT_ROLE = "public"
 DEFAULT_RELOAD = False
 DEFAULT_LOG_LEVEL = "info"
+DEFAULT_PROTOCOL = "http"
 DOTENV_PATH = Path(".env")
 
 
@@ -36,6 +37,18 @@ def _load_preset(path: Path) -> Dict[str, Any]:
     server_cfg = data.get("server", {})
     if server_cfg is not None and not isinstance(server_cfg, dict):
         raise typer.BadParameter("Preset 'server' must be an object")
+
+    admin_cfg = data.get("admin", {})
+    if admin_cfg is not None and not isinstance(admin_cfg, dict):
+        raise typer.BadParameter("Preset 'admin' must be an object")
+
+    # Validate protocol blocks if present
+    if isinstance(server_cfg, dict):
+        for key, value in server_cfg.items():
+            if key in {"host", "port", "role", "reload", "log_level", "protocol"}:
+                continue
+            if not isinstance(value, dict):
+                raise typer.BadParameter(f"Preset 'server.{key}' must be an object")
 
     return data
 
@@ -80,6 +93,13 @@ def _apply_db_config(db_cfg: Dict[str, Any]) -> None:
         os.environ["REACH_DB_ECHO"] = "1" if db_cfg["echo"] else "0"
 
 
+def _as_int(value: Any, field: str) -> int:
+    try:
+        return int(value)
+    except Exception:
+        raise typer.BadParameter(f"Preset '{field}' must be an integer") from None
+
+
 def _resolve_server_config(
     preset_data: Dict[str, Any],
     host: str,
@@ -88,60 +108,87 @@ def _resolve_server_config(
     port_admin: int | None,
     reload: bool,
     log_level: str,
+    protocol: str,
     role: str,
 ) -> Dict[str, Any]:
     server_cfg = preset_data.get("server", {}) if isinstance(preset_data.get("server", {}), dict) else {}
-    public_cfg = server_cfg.get("public", {}) if isinstance(server_cfg.get("public", {}), dict) else {}
-    admin_cfg = server_cfg.get("admin", {}) if isinstance(server_cfg.get("admin", {}), dict) else {}
+    # Pull out protocol-specific blocks (e.g., http/ftp/wss) from server section
+    protocol_blocks = {
+        key: value
+        for key, value in server_cfg.items()
+        if isinstance(value, dict) and key not in {"host", "port", "role", "reload", "log_level", "protocol"}
+    }
+
+    admin_cfg = preset_data.get("admin", {}) if isinstance(preset_data.get("admin", {}), dict) else {}
     db_cfg = preset_data.get("db", {}) if isinstance(preset_data.get("db", {}), dict) else {}
 
-    effective_public_host = public_cfg.get("host", server_cfg.get("host", DEFAULT_HOST))
-    effective_admin_host = admin_cfg.get("host", server_cfg.get("host", DEFAULT_HOST))
-    base_port = server_cfg.get("port", DEFAULT_PORT)
-    preset_public_port = public_cfg.get("port")
-    preset_admin_port = admin_cfg.get("port")
-    effective_role = server_cfg.get("role", DEFAULT_ROLE)
+    base_host_default = server_cfg.get("host", DEFAULT_HOST)
+    base_public_port_default = _as_int(server_cfg.get("port", DEFAULT_PORT), "server.port")
+
+    effective_admin_host = admin_cfg.get("host", base_host_default)
+    base_admin_port = _as_int(admin_cfg.get("port", base_public_port_default), "admin.port") if admin_cfg else base_public_port_default
+    effective_role = server_cfg.get("role", "both" if preset_data.get("admin") else DEFAULT_ROLE)
     effective_reload = server_cfg.get("reload", DEFAULT_RELOAD)
-    effective_log_level = server_cfg.get("log_level", DEFAULT_LOG_LEVEL)
+    effective_log_level = (
+        preset_data.get("log_level", None)
+        if preset_data.get("log_level", None) is not None
+        else server_cfg.get("log_level", DEFAULT_LOG_LEVEL)
+    )
+    effective_protocol = server_cfg.get("protocol", DEFAULT_PROTOCOL)
 
     if host != DEFAULT_HOST:
-        effective_public_host = host
+        base_host_default = host
         effective_admin_host = host
     if port != DEFAULT_PORT:
-        base_port = port
-    if port_public is not None:
-        preset_public_port = port_public
+        base_public_port_default = port
+        base_admin_port = port
     if port_admin is not None:
-        preset_admin_port = port_admin
+        base_admin_port = port_admin
     if role != DEFAULT_ROLE:
         effective_role = role
     if reload != DEFAULT_RELOAD:
         effective_reload = reload
     if log_level != DEFAULT_LOG_LEVEL:
         effective_log_level = log_level
+    if protocol != DEFAULT_PROTOCOL:
+        effective_protocol = protocol
 
     role = effective_role
     reload = effective_reload
     log_level = effective_log_level
+    protocol = effective_protocol
 
     if role not in {"public", "admin", "both"}:
         raise typer.BadParameter("role must be 'public', 'admin', or 'both'")
 
     _apply_db_config(db_cfg)
 
-    public_port = preset_public_port if preset_public_port is not None else base_port
-    admin_port = preset_admin_port if preset_admin_port is not None else base_port
+    protocols: list[Dict[str, Any]] = []
+    if protocol_blocks:
+        for name, cfg in protocol_blocks.items():
+            p_host = cfg.get("host", base_host_default)
+            p_port_raw = cfg.get("port", base_public_port_default)
+            p_port = _as_int(p_port_raw, f"server.{name}.port")
+            protocols.append({"name": name, "host": p_host, "port": p_port})
+    else:
+        # Single-protocol preset (or CLI-driven)
+        p_host = base_host_default
+        p_port = base_public_port_default
+        if port_public is not None:
+            p_port = port_public
+        protocols.append({"name": protocol, "host": p_host, "port": p_port})
 
-    if role == "both" and preset_admin_port is None and port_admin is None:
-        admin_port = public_port + 1
+    admin_port = base_admin_port
+    if role == "both" and port_admin is None and admin_cfg.get("port") is None and protocols:
+        admin_port = protocols[0]["port"] + 1
 
     return {
         "role": role,
         "reload": reload,
         "log_level": log_level,
-        "public_host": effective_public_host,
+        "protocol": protocol,
+        "protocols": protocols,
         "admin_host": effective_admin_host,
-        "public_port": public_port,
         "admin_port": admin_port,
     }
 
@@ -293,9 +340,9 @@ def start_server(
     """
     Start the REACH Core server (FastAPI + Uvicorn).
 
-    - role=public (default): dynamic routes / payloads on --port
+    - role=public (default): dynamic routes / payloads on --port (one per protocol block)
     - role=admin: admin API on --port
-    - role=both: public on --port, admin on --port+1
+    - role=both: public + admin (admin is always HTTP)
     """
     import uvicorn
     import importlib
@@ -313,8 +360,10 @@ def start_server(
         port_admin=port_admin,
         reload=reload,
         log_level=log_level,
+        protocol=protocol,
         role=role,
     )
+    protocols_cfg = config["protocols"]
 
     if docker:
         try:
@@ -322,11 +371,15 @@ def start_server(
         except Exception as e:
             raise typer.BadParameter("Docker SDK not installed. Add `docker` to dependencies.") from e
 
-        role = config["role"]
-        public_port = config["public_port"]
-        admin_port = config["admin_port"]
+        if len(protocols_cfg) > 1:
+            raise typer.BadParameter("Multi-protocol presets are not yet supported with --docker.")
 
-        selected_host = config["public_host"] if role != "admin" else config["admin_host"]
+        role = config["role"]
+        admin_port = config["admin_port"]
+        public_port = protocols_cfg[0]["port"]
+        protocol = protocols_cfg[0]["name"]
+
+        selected_host = protocols_cfg[0]["host"] if role != "admin" else config["admin_host"]
         docker_host = _container_host(selected_host)
         cmd = [
             "reach",
@@ -410,87 +463,67 @@ def start_server(
     from reach.core.server import init_db as core_init_db
 
     # Explicit DB init so app import has no side effects
-    protocol_entry = None
-    # Always ensure core tables exist before starting any protocol.
     core_init_db()
+    protocol_entries: Dict[str, Any] = {}
     if role != "admin":
-        importlib.import_module(f"reach.core.protocols.{protocol}.server")
-        protocol_entry = get_protocol(protocol)
-        if protocol_entry.init_db:
-            protocol_entry.init_db()
+        for p_cfg in protocols_cfg:
+            pname = p_cfg["name"]
+            importlib.import_module(f"reach.core.protocols.{pname}.server")
+            entry = get_protocol(pname)
+            if entry.init_db and pname not in protocol_entries:
+                entry.init_db()
+            protocol_entries[pname] = entry
 
     role = config["role"]
     reload = config["reload"]
     log_level = config["log_level"]
-    effective_public_host = config["public_host"]
-    effective_admin_host = config["admin_host"]
-    public_port = config["public_port"]
+    admin_host = config["admin_host"]
     admin_port = config["admin_port"]
 
-    if role in {"public", "admin"}:
-        if role == "public":
-            if protocol_entry is None:
-                importlib.import_module(f"reach.core.protocols.{protocol}.server")
-                protocol_entry = get_protocol(protocol)
-            target = protocol_entry.public_app
-        else:
-            target = "reach.core.server:create_admin_app"
-        effective_port = public_port if role == "public" else admin_port
-        effective_host = effective_public_host if role == "public" else effective_admin_host
+    processes: list[Process] = []
 
-        scheme = "http"
-        if role == "public" and protocol_entry:
-            scheme = protocol_entry.name
-        typer.echo(f"🚀 Starting REACH Core {role} server on {scheme}://{effective_host}:{effective_port} ...")
-        typer.echo(f"📡 App: {target}")
+    def _run_protocol(entry: Any, host_: str, port_: int) -> None:
+        if entry.server_type != "asgi":
+            entry.run(host_, port_)
+            return
+        uvicorn.run(
+            entry.public_app,
+            host=host_,
+            port=port_,
+            reload=reload,
+            log_level=log_level,
+            factory=True,
+        )
 
-        if role == "public" and protocol_entry and protocol_entry.server_type != "asgi":
-            protocol_entry.run(effective_host, effective_port)
-        else:
-            uvicorn.run(
-                target,
-                host=effective_host,
-                port=effective_port,
-                reload=reload,
-                log_level=log_level,
-                factory=True,
-            )
-    else:
-        importlib.import_module(f"reach.core.protocols.{protocol}.server")
-        protocol_entry = get_protocol(protocol)
-        public_target = protocol_entry.public_app
-        admin_target = "reach.core.server:create_admin_app"
+    def _run_admin(host_: str, port_: int) -> None:
+        uvicorn.run(
+            "reach.core.server:create_admin_app",
+            host=host_,
+            port=port_,
+            reload=reload,
+            log_level=log_level,
+            factory=True,
+        )
 
-        public_scheme = protocol_entry.name
-        typer.echo(f"🚀 Starting REACH Core public server on {public_scheme}://{effective_public_host}:{public_port} ...")
-        typer.echo(f"📡 Public app: {public_target}")
-        typer.echo(f"🚀 Starting REACH Core admin server on http://{effective_admin_host}:{admin_port} ...")
-        typer.echo(f"📡 Admin app: {admin_target}")
+    if role in {"public", "both"}:
+        for p_cfg in protocols_cfg:
+            entry = protocol_entries[p_cfg["name"]]
+            typer.echo(f"🚀 Starting REACH Core public server on {entry.name}://{p_cfg['host']}:{p_cfg['port']} ...")
+            proc = Process(target=_run_protocol, args=(entry, p_cfg["host"], p_cfg["port"]))
+            proc.start()
+            processes.append(proc)
 
-        def run_server(target: str, port_: int) -> None:
-            if target == public_target and protocol_entry.server_type != "asgi":
-                protocol_entry.run(effective_public_host, port_)
-                return
-            uvicorn.run(
-                target,
-                host=effective_public_host if target == public_target else effective_admin_host,
-                port=port_,
-                reload=reload,
-                log_level=log_level,
-                factory=True,
-            )
-
-        public_proc = Process(target=run_server, args=(public_target, public_port))
-        admin_proc = Process(target=run_server, args=(admin_target, admin_port))
-
-        public_proc.start()
+    if role in {"admin", "both"}:
+        typer.echo(f"🚀 Starting REACH Core admin server on http://{admin_host}:{admin_port} ...")
+        admin_proc = Process(target=_run_admin, args=(admin_host, admin_port))
         admin_proc.start()
+        processes.append(admin_proc)
 
-        try:
-            public_proc.join()
-            admin_proc.join()
-        except KeyboardInterrupt:
-            typer.echo("🛑 Shutting down both servers...")
-            for proc in (public_proc, admin_proc):
-                if proc.is_alive():
-                    proc.terminate()
+    try:
+        for proc in processes:
+            proc.join()
+    except KeyboardInterrupt:
+        typer.echo("🛑 Shutting down servers...")
+        for proc in processes:
+            if proc.is_alive():
+                proc.terminate()

@@ -13,6 +13,7 @@ dependencies = [
     "pymysql",
     "rich",
     "typer[all]",
+    "websockets",
 ]
 
 [project.optional-dependencies]

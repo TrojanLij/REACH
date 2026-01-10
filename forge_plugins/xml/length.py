@@ -5,7 +5,9 @@ __all__ = ["generate"]
 
 def generate(length: int = 10) -> str:
     """
-    Simple python script.
+    Simple python script for testing forge console interaction.
+
+    Author: @Trojan
     
     Params:
     - length: How many characters??
