@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from .protocols.http.server import create_app, create_public_app, init_db
+from .db.init import init_db
+from .protocols.http.server import create_app, create_public_app
 from .routing.static import register_static_routing
 
 

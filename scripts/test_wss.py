@@ -3,7 +3,7 @@ import websockets
 
 async def hello():
     # The 'async with' statement ensures the connection is closed properly
-    uri = "wss://localhost:8443" # Replace with your WebSocket server URI (ws:// for standard, wss:// for secure)
+    uri = "ws://0.0.0.0:8443" # Replace with your WebSocket server URI (ws:// for standard, wss:// for secure)
     try:
         async with websockets.connect(uri) as websocket:
             # Send a message

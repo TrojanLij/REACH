@@ -8,19 +8,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 
 from ... import logging as reach_logging
-from ...db import Base, SessionLocal, engine, models
+from ...db import SessionLocal, models
 from ...globals import RESERVED_PREFIXES
 from ..registry import register_protocol
-
-
-def init_db() -> None:
-    """
-    Initialize database schema.
-
-    Call this explicitly from the CLI or your own bootstrap code so that
-    app import does not have side effects.
-    """
-    Base.metadata.create_all(bind=engine)
+from ...db.init import init_db
 
 
 def _is_reserved_path(full_path: str) -> bool:

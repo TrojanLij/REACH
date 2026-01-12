@@ -10,7 +10,6 @@ from pathlib import PurePosixPath
 from typing import Any, Dict, Optional
 
 import typer
-import uvicorn
 
 from . import app
 
@@ -22,6 +21,7 @@ DEFAULT_RELOAD = False
 DEFAULT_LOG_LEVEL = "info"
 DEFAULT_PROTOCOL = "http"
 DOTENV_PATH = Path(".env")
+_DOTENV_LOADED = False
 
 
 def _load_preset(path: Path) -> Dict[str, Any]:
@@ -60,7 +60,12 @@ def _load_dotenv(path: Path = DOTENV_PATH) -> None:
     Only sets variables that are not already defined in the environment,
     so real env vars still take precedence.
     """
+    global _DOTENV_LOADED
+    if _DOTENV_LOADED:
+        return
+
     if not path.exists():
+        _DOTENV_LOADED = True
         return
 
     for line in path.read_text().splitlines():
@@ -74,6 +79,7 @@ def _load_dotenv(path: Path = DOTENV_PATH) -> None:
         value = value.strip().strip('"').strip("'")
         if key and key not in os.environ:
             os.environ[key] = value
+    _DOTENV_LOADED = True
 
 
 def _get_preset_data(preset: Optional[Path]) -> Dict[str, Any]:
@@ -110,6 +116,8 @@ def _resolve_server_config(
     log_level: str,
     protocol: str,
     role: str,
+    *,
+    allow_reload: bool = True,
 ) -> Dict[str, Any]:
     server_cfg = preset_data.get("server", {}) if isinstance(preset_data.get("server", {}), dict) else {}
     # Pull out protocol-specific blocks (e.g., http/ftp/wss) from server section
@@ -181,6 +189,9 @@ def _resolve_server_config(
     admin_port = base_admin_port
     if role == "both" and port_admin is None and admin_cfg.get("port") is None and protocols:
         admin_port = protocols[0]["port"] + 1
+
+    if not allow_reload and reload:
+        raise typer.BadParameter("Auto-reload is disabled in this environment; remove --reload and preset reload=true.")
 
     return {
         "role": role,
@@ -313,7 +324,11 @@ def start_server(
         "--port-admin",
         help="Admin server port (overrides --port for role=admin/both)",
     ),
-    reload: bool = typer.Option(False, "--reload/--no-reload", help="Auto-reload on file change"),
+    reload: bool = typer.Option(
+        False,
+        "--reload/--no-reload",
+        help="(Disabled) Auto-reload is not supported; using --reload will error.",
+    ),
     log_level: str = typer.Option("info", "--log-level", help="Log level (debug, info, warning, error)"),
     protocol: str = typer.Option(
         "http",
@@ -362,6 +377,7 @@ def start_server(
         log_level=log_level,
         protocol=protocol,
         role=role,
+        allow_reload=False,
     )
     protocols_cfg = config["protocols"]
 
@@ -371,16 +387,22 @@ def start_server(
         except Exception as e:
             raise typer.BadParameter("Docker SDK not installed. Add `docker` to dependencies.") from e
 
-        if len(protocols_cfg) > 1:
-            raise typer.BadParameter("Multi-protocol presets are not yet supported with --docker.")
-
         role = config["role"]
+        admin_host = _container_host(config["admin_host"])
         admin_port = config["admin_port"]
-        public_port = protocols_cfg[0]["port"]
-        protocol = protocols_cfg[0]["name"]
+        container_protocols = [
+            {"name": p_cfg["name"], "host": _container_host(p_cfg["host"]), "port": p_cfg["port"]} for p_cfg in protocols_cfg
+        ]
+        primary_protocol = container_protocols[0] if container_protocols else {"name": config["protocol"], "port": config["admin_port"]}
 
-        selected_host = protocols_cfg[0]["host"] if role != "admin" else config["admin_host"]
-        docker_host = _container_host(selected_host)
+        # If multiple protocols have differing hosts, default to 0.0.0.0 inside the container.
+        host_candidates = set()
+        if role != "admin":
+            host_candidates.update(p["host"] for p in container_protocols)
+        if role != "public":
+            host_candidates.add(admin_host)
+        docker_host = host_candidates.pop() if len(host_candidates) == 1 else "0.0.0.0"
+
         cmd = [
             "reach",
             "server",
@@ -391,16 +413,27 @@ def start_server(
             role,
             "--log-level",
             config["log_level"],
-            "--protocol",
-            protocol,
         ]
         if config["reload"]:
             cmd.append("--reload")
         if role in {"public", "admin"}:
-            effective_port = public_port if role == "public" else admin_port
+            if role == "public":
+                cmd.extend(["--protocol", primary_protocol["name"]])
+                effective_port = primary_protocol["port"]
+            else:
+                effective_port = admin_port
             cmd.extend(["--port", str(effective_port)])
         else:
-            cmd.extend(["--port-public", str(public_port), "--port-admin", str(admin_port)])
+            cmd.extend(
+                [
+                    "--protocol",
+                    primary_protocol["name"],
+                    "--port-public",
+                    str(primary_protocol["port"]),
+                    "--port-admin",
+                    str(admin_port),
+                ]
+            )
 
         preset_path = None
         preset_container_path = None
@@ -410,12 +443,13 @@ def start_server(
             cmd.extend(["--preset", preset_container_path])
 
         ports: Dict[str, int] = {}
-        if role == "public":
-            ports = {f"{public_port}/tcp": public_port}
-        elif role == "admin":
+        if role != "admin":
+            for p_cfg in container_protocols:
+                ports[f"{p_cfg['port']}/tcp"] = p_cfg["port"]
+        if role == "admin":
             ports = {f"{admin_port}/tcp": admin_port}
-        else:
-            ports = {f"{public_port}/tcp": public_port, f"{admin_port}/tcp": admin_port}
+        elif role == "both":
+            ports[f"{admin_port}/tcp"] = admin_port
 
         _ensure_dockerfile(dockerfile)
         if not context.exists():
@@ -496,14 +530,25 @@ def start_server(
         )
 
     def _run_admin(host_: str, port_: int) -> None:
-        uvicorn.run(
+        if reload:
+            uvicorn.run(
+                "reach.core.server:create_admin_app",
+                host=host_,
+                port=port_,
+                reload=reload,
+                log_level=log_level,
+                factory=True,
+            )
+            return
+        config_obj = uvicorn.Config(
             "reach.core.server:create_admin_app",
             host=host_,
             port=port_,
-            reload=reload,
             log_level=log_level,
             factory=True,
         )
+        server = uvicorn.Server(config_obj)
+        server.run()
 
     if role in {"public", "both"}:
         for p_cfg in protocols_cfg:

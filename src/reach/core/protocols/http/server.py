@@ -4,19 +4,9 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from ...db import Base, engine
 from ...routing.dynamic import register_dynamic_routing
 from ..registry import register_protocol
-
-
-def init_db() -> None:
-    """
-    Initialize database schema.
-
-    Call this explicitly from the CLI or your own bootstrap code so that
-    app import does not have side effects.
-    """
-    Base.metadata.create_all(bind=engine)
+from ...db.init import init_db
 
 
 def create_public_app() -> FastAPI:
