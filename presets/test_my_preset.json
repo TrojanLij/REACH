@@ -16,6 +16,6 @@
 
     "log_level": "info",
     "db": {
-      "echo": true
+      "echo": false
     }
 }
