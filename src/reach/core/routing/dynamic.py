@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db, models
-from ..globals import RESERVED_PREFIXES
+from ..globals import RESERVED_PREFIXES, random_server_header
 from .. import logging as reach_logging
 
 DYNAMIC_HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
@@ -118,6 +118,10 @@ def register_dynamic_routing(app: FastAPI) -> None:
                 content={"detail": "No dynamic route matched"},
             )
 
+        response_headers = dict(db_route.headers or {})
+        if not any(k.lower() == "server" for k in response_headers):
+            response_headers["Server"] = random_server_header()
+
         # Decide how to build the response body
         if getattr(db_route, "body_encoding", DEFAULT_BODY_ENCODING) == "base64":
             # Treat response_body as base64-encoded bytes (good for images)
@@ -133,6 +137,7 @@ def register_dynamic_routing(app: FastAPI) -> None:
                 content=body_bytes,
                 status_code=db_route.status_code,
                 media_type=db_route.content_type,
+                headers=response_headers,
             )
         else:
             # Plain text payload
@@ -141,4 +146,5 @@ def register_dynamic_routing(app: FastAPI) -> None:
                 content=body_str,
                 status_code=db_route.status_code,
                 media_type=db_route.content_type,
+                headers=response_headers,
             )

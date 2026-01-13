@@ -17,6 +17,26 @@ RESERVED_PREFIXES = (
 )
 
 
+SERVER_HEADER_PREFIXES = [
+    "Apache",
+    "nginx",
+    "Microsoft-IIS"
+]
+
+
+def _random_version() -> str:
+    major = secrets.randbelow(10)
+    minor = secrets.randbelow(100)
+    patch = secrets.randbelow(10)
+    return f"{major}.{minor}.{patch}"
+
+
+def random_server_header() -> str:
+    """Return a randomized Server header value."""
+    prefix = secrets.choice(SERVER_HEADER_PREFIXES)
+    return f"{prefix}/{_random_version()}"
+
+
 def random_string(length: int = 16, alphabet: str | None = None) -> str:
     """Return a cryptographically secure random string."""
     if length <= 0:

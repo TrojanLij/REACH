@@ -1,11 +1,28 @@
 """SQLAlchemy ORM models backing REACH Core persistence."""
 from __future__ import annotations
 
+import json
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Text, DateTime
 
 from .base import Base
+
+
+def _mapping_to_json(value: dict[str, str]) -> str:
+    """Serialize a mapping to JSON for storage."""
+    return json.dumps(value or {}, ensure_ascii=False)
+
+
+def _json_to_mapping(raw: str) -> dict[str, str]:
+    """Deserialize a JSON mapping into a {str: str} dict."""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return {str(k): str(v) for k, v in data.items()}
+    except Exception:
+        pass
+    return {}
 
 
 class Route(Base):
@@ -21,9 +38,20 @@ class Route(Base):
     content_type = Column(String(100), nullable=False, default="text/plain")
     # Encoding of response_body, e.g. "none" or "base64".
     body_encoding = Column(String(16), nullable=False, default="none")
+    # JSON-encoded mapping of header name to value.
+    response_headers = Column(Text, nullable=False, default="{}")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     # Manually maintained; updated in the admin API.
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def headers(self) -> dict[str, str]:
+        """Return response headers as a mapping."""
+        return _json_to_mapping(getattr(self, "response_headers", "{}"))
+
+    def set_headers(self, headers: dict[str, str]) -> None:
+        """Persist response headers as JSON."""
+        self.response_headers = _mapping_to_json(headers)
 
 
 class RequestLog(Base):

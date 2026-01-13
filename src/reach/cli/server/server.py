@@ -527,6 +527,7 @@ def start_server(
             reload=reload,
             log_level=log_level,
             factory=True,
+            server_header=False,
         )
 
     def _run_admin(host_: str, port_: int) -> None:
@@ -538,6 +539,7 @@ def start_server(
                 reload=reload,
                 log_level=log_level,
                 factory=True,
+                server_header=False,
             )
             return
         config_obj = uvicorn.Config(
@@ -546,6 +548,7 @@ def start_server(
             port=port_,
             log_level=log_level,
             factory=True,
+            server_header=False,
         )
         server = uvicorn.Server(config_obj)
         server.run()

@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BodyEncoding(str, Enum):
@@ -25,6 +25,7 @@ class RouteBase(BaseModel):
     response_body: str = "OK"
     content_type: str = "text/plain"
     body_encoding: BodyEncodingLiteral = BodyEncoding.NONE
+    headers: dict[str, str] = Field(default_factory=dict)
 
 
 class RouteCreate(RouteBase):
@@ -38,6 +39,7 @@ class RouteUpdate(BaseModel):
     response_body: str | None = None
     content_type: str | None = None
     body_encoding: BodyEncodingLiteral | None = None
+    headers: dict[str, str] | None = None
 
 
 class RouteOut(RouteBase):

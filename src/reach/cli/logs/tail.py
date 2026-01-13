@@ -38,6 +38,11 @@ def tail_logs(
         "--protocol",
         help="Only show log entries for this protocol (e.g. http, ftp).",
     ),
+    header_bool: bool = typer.Option(
+        False,
+        "--header",
+        help="Shows the request headers"
+    ),
 ) -> None:
     """
     Stream inbound requests (and status) from REACH Core, like `tail -f`.
@@ -91,6 +96,7 @@ def tail_logs(
                     body = entry.get("body") or ""
                     raw_bytes = entry.get("raw_bytes") or ""
                     query_params = entry.get("query_params") or {}
+                    headers = entry.get("headers") or {}
 
                     text_for_match = " ".join(
                         str(x)
@@ -105,6 +111,7 @@ def tail_logs(
                             host,
                             body,
                             raw_bytes,
+                            headers
                         ]
                     )
 
@@ -127,6 +134,13 @@ def tail_logs(
                         console.print("\tQuery:")
                         for key, value in query_params.items():
                             console.print(f"\t{key}={value}")
+
+                    # For headers in request
+                    if header_bool and isinstance(headers, dict) and headers:
+                        console.print("\tHeaders:")
+                        console.print(headers)
+                        # for key, value in headers.items():
+                        #     console.log(f"{str(key)}={str(value)}")
 
                     # For POST/PUT/PATCH, show body (if any)
                     if method.upper() in {"POST", "PUT", "PATCH"} and body:

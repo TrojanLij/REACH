@@ -18,6 +18,13 @@ def _normalize_path(path: str) -> str:
     return path.lstrip("/")
 
 
+def _normalize_headers(headers: dict[str, str] | None) -> dict[str, str]:
+    """Ensure headers are a {str: str} mapping."""
+    if not headers:
+        return {}
+    return {str(k): str(v) for k, v in headers.items()}
+
+
 def _apply_route_updates(db_route: models.Route, route_upd: RouteUpdate) -> None:
     """Apply a partial RouteUpdate to an existing Route row."""
     if route_upd.status_code is not None:
@@ -31,6 +38,9 @@ def _apply_route_updates(db_route: models.Route, route_upd: RouteUpdate) -> None
 
     if route_upd.body_encoding is not None:
         db_route.body_encoding = route_upd.body_encoding
+
+    if route_upd.headers is not None:
+        db_route.set_headers(_normalize_headers(route_upd.headers))
 
 
 @router.get("", response_model=list[RouteOut])
@@ -66,6 +76,7 @@ def create_route(route_in: RouteCreate, db: Session = Depends(get_db)) -> RouteO
         content_type=route_in.content_type,
         body_encoding=route_in.body_encoding,
     )
+    db_route.set_headers(_normalize_headers(route_in.headers))
     db.add(db_route)
     db.commit()
     db.refresh(db_route)

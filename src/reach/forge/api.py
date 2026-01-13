@@ -76,6 +76,7 @@ class ForgeController:
         method: str = "GET",
         status_code: int = 200,
         content_type: str = "text/html",
+        headers: Dict[str, Any] | None = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -85,6 +86,7 @@ class ForgeController:
 
         # Normalize path: admin API expects no leading slash
         normalized_path = path.lstrip("/")
+        normalized_headers = {str(k): str(v) for k, v in (headers or {}).items()}
 
         route_body = {
             "method": method.upper(),
@@ -93,6 +95,7 @@ class ForgeController:
             "response_body": payload.value,
             "content_type": content_type,
             "body_encoding": "none",
+            "headers": normalized_headers,
         }
 
         created_route = self.core_client.create_route(route_body)
