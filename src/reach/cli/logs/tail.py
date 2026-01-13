@@ -31,7 +31,7 @@ def tail_logs(
     regex: str | None = typer.Option(
         None,
         "--regex",
-        help="Only show log entries where this regex matches (method/path/status/ip/host/body).",
+        help="Only show log entries where this regex matches (method/path/status/ip/host/body/headers).",
     ),
     protocol: str | None = typer.Option(
         None,
