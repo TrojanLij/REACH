@@ -25,6 +25,22 @@ def _json_to_mapping(raw: str) -> dict[str, str]:
     return {}
 
 
+def _obj_to_json(value: dict[str, Any]) -> str:
+    """Serialize a JSON-compatible dict for storage."""
+    return json.dumps(value or {}, ensure_ascii=False)
+
+
+def _json_to_obj(raw: str) -> dict[str, Any]:
+    """Deserialize a JSON object into a dict."""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return {}
+
+
 class Route(Base):
     """Dynamic route definition stored in the database."""
 

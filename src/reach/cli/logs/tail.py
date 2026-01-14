@@ -94,6 +94,7 @@ def tail_logs(
                     client_ip = entry.get("client_ip") or "-"
                     host = entry.get("host") or "-"
                     body = entry.get("body") or ""
+                    headers = entry.get("headers") or {}
                     raw_bytes = entry.get("raw_bytes") or ""
                     query_params = entry.get("query_params") or {}
                     headers = entry.get("headers") or {}
@@ -110,6 +111,7 @@ def tail_logs(
                             client_ip,
                             host,
                             body,
+                            headers,
                             raw_bytes,
                             headers
                         ]
