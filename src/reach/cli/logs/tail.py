@@ -120,6 +120,7 @@ def tail_logs(
                     if pattern is not None and not pattern.search(text_for_match):
                         continue
 
+                    route_match = "route" if route_id is not None else "no-route"
                     console.print(
                         f"[bold]{entry['id']:>5}[/bold] "
                         f"[dim]{ts}[/dim] "
@@ -128,7 +129,7 @@ def tail_logs(
                         f"{path} "
                         # f"(cmd={command}) "
                         f"-> [yellow]{status}[/yellow] "
-                        f"(route_id={route_id}, ip={client_ip}, host={host})"
+                        f"(match={route_match}, route_id={route_id}, ip={client_ip}, host={host})"
                     )
 
                     # For GET requests, also show query parameters (if any)

@@ -34,7 +34,7 @@ def _register_from_package(package_name: str, kind_prefix: str) -> None:
         fn = getattr(module, "generate", None)
         if callable(fn):
             kind = f"{kind_prefix}_{mod.name}"
-            REGISTRY[kind] = fn
+            REGISTRY[kind] = fn # type: ignore
 
 
 def _discover_internal() -> None:
@@ -51,16 +51,16 @@ def _discover_internal() -> None:
 def _load_external_plugins() -> None:
     """
     Load generators from external plugin paths:
-      - $PWD/forge_plugins/<family>/<name>.py
-      - $HOME/.reach/forge_plugins/<family>/<name>.py
+      - $PWD/forge/plugins/<family>/<name>.py
+      - $HOME/.reach/forge/plugins/<family>/<name>.py
       - any path in REACH_FORGE_PLUGIN_PATHS (os.pathsep-separated)
     """
     roots = []
     env_paths = os.getenv("REACH_FORGE_PLUGIN_PATHS")
     if env_paths:
         roots.extend([Path(p) for p in env_paths.split(os.pathsep) if p])
-    roots.append(Path.cwd() / "forge_plugins")
-    roots.append(Path.home() / ".reach" / "forge_plugins")
+    roots.append(Path.cwd() / "forge" / "plugins")
+    roots.append(Path.home() / ".reach" / "forge" / "plugins")
 
     for root in roots:
         if not root.exists() or not root.is_dir():
@@ -82,7 +82,7 @@ def _load_external_plugins() -> None:
                         spec.loader.exec_module(module)  # type: ignore[attr-defined]
                         fn = getattr(module, "generate", None)
                         if callable(fn):
-                            REGISTRY[kind] = fn
+                            REGISTRY[kind] = fn # type: ignore
                 except Exception:
                     # Best-effort: skip broken plugins
                     continue

@@ -20,9 +20,11 @@ def forge_list_payloads(kind: str | None = None) -> None:
         table = Table(title="Forge Payload Kinds")
         table.add_column("Kind", style="cyan")
         table.add_column("Summary", style="white")
+        table.add_column("Location", style="dim")
         for name, fn in sorted(REGISTRY.items()):
             doc = (fn.__doc__ or "").strip().splitlines()[0] if fn.__doc__ else ""
-            table.add_row(name, doc)
+            location = inspect.getsourcefile(fn) or inspect.getfile(fn)
+            table.add_row(name, doc, location)
         console.print(table)
         return
 
