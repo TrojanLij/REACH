@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from base64 import b64decode
+from base64 import b64decode, b64encode
+import json
 import re
+from urllib.parse import quote_plus, unquote_plus
 from typing import Any, Callable
 
 from fastapi import FastAPI, Request, Depends, HTTPException
@@ -127,7 +129,7 @@ def register_dynamic_routing(app: FastAPI) -> None:
         request.state.logged = True
 
         if rule_action is not None:
-            return _build_rule_response(rule_action)
+            return _build_rule_response(rule_action, request_context)
 
         # No matching route → clean 404
         if not db_route:
@@ -188,6 +190,43 @@ def _match_mapping(patterns: dict[str, Any], values: dict[str, Any]) -> bool:
 def _rule_matches(match: dict[str, Any], ctx: dict[str, Any]) -> bool:
     if not match:
         return True
+    if "any" in match and not _evaluate_any(match["any"], ctx):
+        return False
+    if "all" in match and not _evaluate_all(match["all"], ctx):
+        return False
+    if "not" in match and _evaluate_not(match["not"], ctx):
+        return False
+    return _evaluate_leaf(match, ctx)
+
+
+def _evaluate_any(value: Any, ctx: dict[str, Any]) -> bool:
+    if isinstance(value, list):
+        items = [item for item in value if isinstance(item, dict)]
+        return bool(items) and any(_rule_matches(item, ctx) for item in items)
+    if isinstance(value, dict):
+        return _rule_matches(value, ctx)
+    return False
+
+
+def _evaluate_all(value: Any, ctx: dict[str, Any]) -> bool:
+    if isinstance(value, list):
+        items = [item for item in value if isinstance(item, dict)]
+        return bool(items) and all(_rule_matches(item, ctx) for item in items)
+    if isinstance(value, dict):
+        return _rule_matches(value, ctx)
+    return False
+
+
+def _evaluate_not(value: Any, ctx: dict[str, Any]) -> bool:
+    if isinstance(value, list):
+        items = [item for item in value if isinstance(item, dict)]
+        return bool(items) and any(_rule_matches(item, ctx) for item in items)
+    if isinstance(value, dict):
+        return _rule_matches(value, ctx)
+    return False
+
+
+def _evaluate_leaf(match: dict[str, Any], ctx: dict[str, Any]) -> bool:
     if "method" in match and not _regex_match(str(match["method"]), ctx["method"]):
         return False
     if "path" in match and not _regex_match(str(match["path"]), ctx["path"]):
@@ -230,20 +269,79 @@ def _rule_status_code(action: dict[str, Any]) -> int:
     return status if isinstance(status, int) else 200
 
 
-def _build_rule_response(action: dict[str, Any]) -> Response:
+def _build_rule_response(action: dict[str, Any], ctx: dict[str, Any]) -> Response:
     body = action.get("body")
     if body is None:
         body = action.get("response_body", "")
-    content_type = action.get("content_type", "text/plain")
+    content_type = _render_template(action.get("content_type", "text/plain"), ctx)
     status_code = _rule_status_code(action)
     headers = action.get("headers")
     if not isinstance(headers, dict):
         headers = {}
     if not any(k.lower() == "server" for k in headers):
         headers["Server"] = random_server_header()
+    rendered_headers = {str(k): _render_template(v, ctx) for k, v in headers.items()}
     return Response(
-        content=str(body),
+        content=_render_template(body, ctx),
         status_code=status_code,
         media_type=str(content_type),
-        headers={str(k): str(v) for k, v in headers.items()},
+        headers=rendered_headers,
     )
+
+
+_TEMPLATE_RE = re.compile(r"{{\s*(.+?)\s*}}")
+
+
+def _render_template(value: Any, ctx: dict[str, Any]) -> str:
+    if value is None:
+        return ""
+    text = str(value)
+
+    def replace(match: re.Match[str]) -> str:
+        expr = match.group(1)
+        parts = [p.strip() for p in expr.split("|") if p.strip()]
+        if not parts:
+            return ""
+        current = _resolve_path(parts[0], ctx)
+        for flt in parts[1:]:
+            current = _apply_filter(current, flt)
+        return str(current)
+
+    return _TEMPLATE_RE.sub(replace, text)
+
+
+def _resolve_path(path: str, ctx: dict[str, Any]) -> Any:
+    current: Any = ctx
+    for part in path.split("."):
+        if isinstance(current, dict) and part in current:
+            current = current[part]
+        else:
+            return ""
+    return current
+
+
+def _apply_filter(value: Any, flt: str) -> Any:
+    text = str(value)
+    if flt == "lower":
+        return text.lower()
+    if flt == "upper":
+        return text.upper()
+    if flt == "strip":
+        return text.strip()
+    if flt == "b64encode":
+        return b64encode(text.encode("utf-8")).decode("utf-8")
+    if flt == "b64decode":
+        try:
+            return b64decode(text).decode("utf-8", errors="replace")
+        except Exception:
+            return ""
+    if flt == "url_encode":
+        return quote_plus(text)
+    if flt == "url_decode":
+        return unquote_plus(text)
+    if flt == "json":
+        try:
+            return json.dumps(json.loads(text), separators=(",", ":"), ensure_ascii=True)
+        except Exception:
+            return text
+    return text
