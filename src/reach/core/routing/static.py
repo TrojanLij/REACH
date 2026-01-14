@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db, models
 from ..api.routes import router as routes_router
+from ..api.rules import router as rules_router
 from ..api.logs import router as logs_router
 
 
@@ -60,5 +61,6 @@ def register_static_routing(app: FastAPI) -> None:
         }
 
     app.include_router(routes_router)
+    app.include_router(rules_router)
     app.include_router(logs_router)
 

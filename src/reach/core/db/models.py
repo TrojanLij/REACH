@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 
 from .base import Base
 
@@ -101,3 +102,36 @@ class RequestLog(Base):
     # Raw payload bytes for non-HTTP protocols (stored as text or base64).
     raw_bytes = Column(Text, nullable=True)
     raw_bytes_encoding = Column(String(16), nullable=False, default="none")
+
+
+class TriggerRule(Base):
+    """Rule definition for dynamic request matching and responses."""
+
+    __tablename__ = "trigger_rules"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(128), nullable=False)
+    enabled = Column(Boolean, nullable=False, default=True)
+    priority = Column(Integer, nullable=False, default=100)
+    match_criteria = Column(Text, nullable=False, default="{}")
+    action_data = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def match(self) -> dict[str, Any]:
+        """Return match criteria as a dict."""
+        return _json_to_obj(self.match_criteria)
+
+    def set_match(self, match: dict[str, Any]) -> None:
+        """Persist match criteria as JSON."""
+        self.match_criteria = _obj_to_json(match)
+
+    @property
+    def action(self) -> dict[str, Any]:
+        """Return rule action as a dict."""
+        return _json_to_obj(self.action_data)
+
+    def set_action(self, action: dict[str, Any]) -> None:
+        """Persist rule action as JSON."""
+        self.action_data = _obj_to_json(action)

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import Literal, Any
 
 from pydantic import BaseModel, Field
 
@@ -44,6 +44,38 @@ class RouteUpdate(BaseModel):
 
 class RouteOut(RouteBase):
     """Route model returned from the admin API."""
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TriggerRuleBase(BaseModel):
+    name: str
+    enabled: bool = True
+    priority: int = 100
+    match: dict[str, Any] = Field(default_factory=dict)
+    action: dict[str, Any] = Field(default_factory=dict)
+
+
+class TriggerRuleCreate(TriggerRuleBase):
+    """Payload for creating a new trigger rule."""
+
+
+class TriggerRuleUpdate(BaseModel):
+    """Payload for partially updating an existing trigger rule."""
+
+    name: str | None = None
+    enabled: bool | None = None
+    priority: int | None = None
+    match: dict[str, Any] | None = None
+    action: dict[str, Any] | None = None
+
+
+class TriggerRuleOut(TriggerRuleBase):
+    """Trigger rule model returned from the admin API."""
 
     id: int
     created_at: datetime
