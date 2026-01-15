@@ -135,3 +135,25 @@ class TriggerRule(Base):
     def set_action(self, action: dict[str, Any]) -> None:
         """Persist rule action as JSON."""
         self.action_data = _obj_to_json(action)
+
+
+class RuleState(Base):
+    """State store for chaining rule logic across requests."""
+
+    __tablename__ = "rule_state"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    state_key = Column(String(255), nullable=False, index=True, unique=True)
+    data = Column(Text, nullable=False, default="{}")
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def payload(self) -> dict[str, Any]:
+        """Return stored state data as a dict."""
+        return _json_to_obj(self.data)
+
+    def set_payload(self, data: dict[str, Any]) -> None:
+        """Persist state data as JSON."""
+        self.data = _obj_to_json(data)

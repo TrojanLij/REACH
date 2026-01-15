@@ -50,17 +50,17 @@ def _discover_internal() -> None:
 
 def _load_external_plugins() -> None:
     """
-    Load generators from external plugin paths:
-      - $PWD/forge/plugins/<family>/<name>.py
-      - $HOME/.reach/forge/plugins/<family>/<name>.py
+    Load generators from external generator paths:
+      - $PWD/plugins/forge/generators/<family>/<name>.py
+      - $HOME/.reach/plugins/forge/generators/<family>/<name>.py
       - any path in REACH_FORGE_PLUGIN_PATHS (os.pathsep-separated)
     """
     roots = []
     env_paths = os.getenv("REACH_FORGE_PLUGIN_PATHS")
     if env_paths:
         roots.extend([Path(p) for p in env_paths.split(os.pathsep) if p])
-    roots.append(Path.cwd() / "forge" / "plugins")
-    roots.append(Path.home() / ".reach" / "forge" / "plugins")
+    roots.append(Path.cwd() / "plugins" / "forge" / "generators")
+    roots.append(Path.home() / ".reach" / "plugins" / "forge" / "generators")
 
     for root in roots:
         if not root.exists() or not root.is_dir():
