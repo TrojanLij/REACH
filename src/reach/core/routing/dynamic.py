@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-from base64 import b64decode, b64encode
+from base64 import b64decode
 from datetime import datetime, timezone, timedelta
-import importlib.util
-import json
-import os
-from pathlib import Path
 import re
-from urllib.parse import quote_plus, unquote_plus
 from typing import Any, Callable
 
 import httpx
@@ -20,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db, models
 from ..globals import RESERVED_PREFIXES, random_server_header
+from .filters import FILTERS
 from .. import logging as reach_logging
 
 DYNAMIC_HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
@@ -354,101 +350,24 @@ def _resolve_path(path: str, ctx: dict[str, Any]) -> Any:
 
 def _apply_filter(value: Any, flt: str) -> Any:
     text = str(value)
-    func = _FILTERS.get(flt)
+    name = flt
+    arg: str | None = None
+    if ":" in flt:
+        name, arg = flt.split(":", 1)
+        name = name.strip()
+        arg = arg.strip()
+    func = FILTERS.get(name)
     if func is None:
         return text
     try:
+        if arg is not None:
+            try:
+                return func(text, arg)
+            except TypeError:
+                return func(text)
         return func(text)
     except Exception:
         return text
-
-
-def _filter_lower(value: str) -> str:
-    return value.lower()
-
-
-def _filter_upper(value: str) -> str:
-    return value.upper()
-
-
-def _filter_strip(value: str) -> str:
-    return value.strip()
-
-
-def _filter_b64encode(value: str) -> str:
-    return b64encode(value.encode("utf-8")).decode("utf-8")
-
-
-def _filter_b64decode(value: str) -> str:
-    try:
-        return b64decode(value).decode("utf-8", errors="replace")
-    except Exception:
-        return ""
-
-
-def _filter_url_encode(value: str) -> str:
-    return quote_plus(value)
-
-
-def _filter_url_decode(value: str) -> str:
-    return unquote_plus(value)
-
-
-def _filter_json(value: str) -> str:
-    try:
-        return json.dumps(json.loads(value), separators=(",", ":"), ensure_ascii=True)
-    except Exception:
-        return value
-
-
-_FILTERS: dict[str, Callable[[str], str]] = {
-    "lower": _filter_lower,
-    "upper": _filter_upper,
-    "strip": _filter_strip,
-    "b64encode": _filter_b64encode,
-    "b64decode": _filter_b64decode,
-    "url_encode": _filter_url_encode,
-    "url_decode": _filter_url_decode,
-    "json": _filter_json,
-}
-
-
-def _load_custom_filters() -> None:
-    roots: list[Path] = []
-    env_paths = os.getenv("REACH_RULE_FILTER_PATHS")
-    if env_paths:
-        roots.extend([Path(p) for p in env_paths.split(os.pathsep) if p])
-    roots.append(Path.cwd() / "plugins" / "rule_filters")
-    roots.append(Path.home() / ".reach" / "plugins" / "rule_filters")
-
-    for root in roots:
-        if not root.exists() or not root.is_dir():
-            continue
-        for pyfile in root.glob("*.py"):
-            if pyfile.name.startswith("_"):
-                continue
-            try:
-                spec = importlib.util.spec_from_file_location(
-                    f"reach.rule_filters.{pyfile.stem}", pyfile
-                )
-                if spec and spec.loader:
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)  # type: ignore[attr-defined]
-                    filters = getattr(module, "FILTERS", None)
-                    if isinstance(filters, dict):
-                        for name, fn in filters.items():
-                            if callable(fn):
-                                _FILTERS[str(name)] = fn
-                        continue
-                    fn = getattr(module, "filter", None)
-                    if callable(fn):
-                        name = getattr(module, "NAME", pyfile.stem)
-                        _FILTERS[str(name)] = fn
-            except Exception:
-                continue
-
-
-_load_custom_filters()
 
 
 async def _maybe_forward_action(action: dict[str, Any], ctx: dict[str, Any]) -> None:

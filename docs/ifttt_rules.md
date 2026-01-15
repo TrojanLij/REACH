@@ -90,10 +90,10 @@ Filters are appended with `|`:
 - `b64encode`, `b64decode`
 - `url_encode`, `url_decode`
 - `json`
+- `json_get:<path>` (dot path, supports array indexes like `items.0.name`)
 
 Custom filters can be loaded from:
-- `./plugins/rule_filters/*.py`
-- `~/.reach/plugins/rule_filters/*.py`
+- `/root/forge/IFTTT/filters/*.py`
 - `REACH_RULE_FILTER_PATHS`
 
 ## Example
