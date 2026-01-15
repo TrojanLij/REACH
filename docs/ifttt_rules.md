@@ -23,16 +23,16 @@ Each rule is a JSON object with:
 All match values are regexes (Python `re.search`). Use `^...$` for exact matches.
 
 Leaf fields:
-- `method` (string) – HTTP method (`GET`, `POST`, etc.)
-- `path` (string) – request path, e.g. `/callback`
+- `method` (string) - HTTP method (`GET`, `POST`, etc.)
+- `path` (string) - request path, e.g. `/callback`
 - `host` (string)
 - `client_ip` (string)
-- `body` (string) – request body as text
-- `headers` (object) – map of header name → regex, header names are case-insensitive
-- `query` (object) – map of query param → regex
-- `state_key` (string, template) – resolves to a state key, used with `state`
-- `state` (object) – map of state field → regex
-- `stage` (string) – `pre` or `post` (default: `post`)
+- `body` (string) - request body as text
+- `headers` (object) - map of header name -> regex, header names are case-insensitive
+- `query` (object) - map of query param -> regex
+- `state_key` (string, template) - resolves to a state key, used with `state`
+- `state` (object) - map of state field -> regex
+- `stage` (string) - `pre` or `post` (default: `post`)
 
 Boolean composition:
 - `all` (list of match blocks)
