@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from ...routing.dynamic import register_dynamic_routing
 from ..registry import register_protocol
@@ -22,6 +23,14 @@ def create_public_app() -> FastAPI:
         redoc_url=None,
         openapi_url=None,
         # openapi_url="/openapi.json", # --> un-comment to test if the file is accidentally exposed
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=False,
     )
 
     # Attach dynamic routing + logging middleware
