@@ -7,13 +7,21 @@ import string
 
 RESERVED_PREFIXES = (
     "api/",
+    "/api",
+    "/api/",
     "debug/",
-    "docs",
+    "/debug",
+    "/debug/",
     "docs/",
+    "/docs"
+    "/docs/"
     "openapi.json",
-    "redoc",
+    "/openapi.json",
     "redoc/",
+    "/redoc",
+    "/redoc/",
     "favicon.ico",
+    "/favicon.ico",
 )
 
 

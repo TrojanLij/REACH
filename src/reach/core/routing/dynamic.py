@@ -8,24 +8,20 @@ import re
 from typing import Any, Callable
 
 import httpx
-from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import Response, JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db, models
-from ..globals import RESERVED_PREFIXES, random_server_header
+from ..globals import random_server_header
+from .reserved import reject_reserved_paths
 from .filters import FILTERS
 from .. import logging as reach_logging
 
 DYNAMIC_HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 # Paths that should bypass the public dynamic router (admin/docs/static)
 DEFAULT_BODY_ENCODING = "none"
-
-
-def _is_reserved_path(full_path: str) -> bool:
-    """Return True if the request path should bypass dynamic routing."""
-    return any(full_path.startswith(prefix) for prefix in RESERVED_PREFIXES)
 
 
 def register_dynamic_routing(app: FastAPI) -> None:
@@ -65,16 +61,13 @@ def register_dynamic_routing(app: FastAPI) -> None:
         methods=DYNAMIC_HTTP_METHODS,
         include_in_schema=False,  # catch-all router doesn't need OpenAPI entries; avoids duplicate operation IDs
     )
+    @reject_reserved_paths
     async def dynamic_router(
         full_path: str,
         request: Request,
         db: Session = Depends(get_db),
     ) -> Any:
         """Catch-all router that serves stored dynamic routes."""
-        # Don't swallow API or debug endpoints
-        if _is_reserved_path(full_path):
-            raise HTTPException(status_code=404, detail="Not found")
-
         method = request.method.upper()
         norm_path = full_path.lstrip("/")
 

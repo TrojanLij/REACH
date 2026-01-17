@@ -2,7 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from ....REACH.src.reach.core.globals import RESERVED_PREFIXES
+from reach.core.globals import RESERVED_PREFIXES
 
 from reach.core.server import create_public_app, init_db
 

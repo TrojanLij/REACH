@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
-from ... import logging as reach_logging
+from ..logging import log_protocol_request
 from ..registry import register_protocol
 
 FTP_BANNER = b"220 REACH FTP capture ready\r\n"
@@ -59,7 +59,7 @@ async def _handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWri
 
         raw_text = data.decode("utf-8", errors="replace")
 
-        reach_logging.add_log(
+        log_protocol_request(
             protocol="ftp",
             method=command or "FTP",
             path="/",

@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.table import Table
 
 from . import app
+from reach.core.db.session import with_session
 
 
 def build_routes_table(
@@ -24,7 +25,7 @@ def build_routes_table(
     """
     from base64 import b64decode
     from reach.core.server import create_admin_app
-    from reach.core.db import SessionLocal, models
+    from reach.core.db import models
 
     table = Table(title="REACH Routes", show_lines=True)
     table.add_column("Type", style="cyan", no_wrap=True)
@@ -57,34 +58,34 @@ def build_routes_table(
 
     # Dynamic DB routes (user-defined payloads)
     if include_dynamic:
-        db = SessionLocal()
-        try:
-            db_routes = db.query(models.Route).all()
-            for r in db_routes:
-                base_row = [
-                    "DYNAMIC",
-                    str(r.id),
-                    r.method,
-                    "/" + r.path,
-                    str(r.status_code),
-                    r.content_type,
-                ]
+        @with_session
+        def _load_routes(*, db=None):
+            return db.query(models.Route).all()
 
-                if show_body or full_body:
-                    body = r.response_body or ""
-                    if decode and getattr(r, "body_encoding", "none") == "base64":
-                        try:
-                            body = b64decode(body).decode("utf-8", errors="replace")
-                        except Exception:
-                            body = f"[INVALID BASE64] {body[:40]}…"
+        db_routes = _load_routes()
+        for r in db_routes:
+            base_row = [
+                "DYNAMIC",
+                str(r.id),
+                r.method,
+                "/" + r.path,
+                str(r.status_code),
+                r.content_type,
+            ]
 
-                    if not full_body and len(body) > 80:
-                        body = body[:80] + "…"
-                    base_row.append(body)
+            if show_body or full_body:
+                body = r.response_body or ""
+                if decode and getattr(r, "body_encoding", "none") == "base64":
+                    try:
+                        body = b64decode(body).decode("utf-8", errors="replace")
+                    except Exception:
+                        body = f"[INVALID BASE64] {body[:40]}…"
 
-                table.add_row(*base_row)
-        finally:
-            db.close()
+                if not full_body and len(body) > 80:
+                    body = body[:80] + "…"
+                base_row.append(body)
+
+            table.add_row(*base_row)
 
     return table
 

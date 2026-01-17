@@ -7,28 +7,21 @@ from base64 import b64decode, b64encode
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 
-from ... import logging as reach_logging
-from ...db import SessionLocal, models
-from ...globals import RESERVED_PREFIXES
+from ...db import models
+from ...db.session import with_session
+from ...routing.reserved import reject_reserved_paths
+from ..logging import log_protocol_request
 from ..registry import register_protocol
 from ...db.init import init_db
 
 
-def _is_reserved_path(full_path: str) -> bool:
-    """Return True if the request path should bypass dynamic routing."""
-    return any(full_path.startswith(prefix) for prefix in RESERVED_PREFIXES)
-
-
-def _fetch_route(path: str) -> models.Route | None:
-    db = SessionLocal()
-    try:
-        stmt = select(models.Route).where(
-            models.Route.method.in_(["WSS", "WS"]),
-            models.Route.path == path,
-        )
-        return db.execute(stmt).scalar_one_or_none()
-    finally:
-        db.close()
+@with_session
+def _fetch_route(path: str, *, db=None) -> models.Route | None:
+    stmt = select(models.Route).where(
+        models.Route.method.in_(["WSS", "WS"]),
+        models.Route.path == path,
+    )
+    return db.execute(stmt).scalar_one_or_none()
 
 
 def create_public_app() -> FastAPI:
@@ -40,18 +33,14 @@ def create_public_app() -> FastAPI:
         title="REACH Core (public WSS)",
         description="Public server for dynamic WebSocket routes",
         version="0.1.0",
-        docs_url="None",
+        docs_url=None,
         redoc_url=None,
         openapi_url=None,
     )
 
     @app.websocket("/{full_path:path}")
+    @reject_reserved_paths
     async def websocket_router(websocket: WebSocket, full_path: str) -> None:
-        if _is_reserved_path(full_path):
-            await websocket.accept()
-            await websocket.close(code=1008)
-            return
-
         norm_path = full_path.lstrip("/")
         db_route = _fetch_route(norm_path)
 
@@ -61,14 +50,14 @@ def create_public_app() -> FastAPI:
         await websocket.accept()
 
         if not db_route:
-            reach_logging.add_log(
+            log_protocol_request(
                 protocol="wss",
                 method="WSS",
                 path="/" + full_path,
                 route_id=None,
                 status_code=404,
-                headers={k: v for k, v in websocket.headers.items()},
-                query_params={k: v for k, v in websocket.query_params.items()},
+                headers=websocket.headers,
+                query_params=websocket.query_params,
                 body=None,
                 client_ip=client_ip,
                 host=host,
@@ -76,14 +65,14 @@ def create_public_app() -> FastAPI:
             await websocket.close(code=1008)
             return
 
-        reach_logging.add_log(
+        log_protocol_request(
             protocol="wss",
             method="WSS",
             path="/" + full_path,
             route_id=db_route.id,
             status_code=101,
-            headers={k: v for k, v in websocket.headers.items()},
-            query_params={k: v for k, v in websocket.query_params.items()},
+            headers=websocket.headers,
+            query_params=websocket.query_params,
             body=None,
             client_ip=client_ip,
             host=host,
@@ -111,7 +100,7 @@ def create_public_app() -> FastAPI:
                     continue
 
                 if message.get("text") is not None:
-                    reach_logging.add_log(
+                    log_protocol_request(
                         protocol="wss",
                         method="MESSAGE",
                         path="/" + full_path,
@@ -125,7 +114,7 @@ def create_public_app() -> FastAPI:
                     )
                 elif message.get("bytes") is not None:
                     raw_b64 = b64encode(message["bytes"]).decode("ascii")
-                    reach_logging.add_log(
+                    log_protocol_request(
                         protocol="wss",
                         method="MESSAGE",
                         path="/" + full_path,
