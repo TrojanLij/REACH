@@ -5,6 +5,7 @@ description = "REACH web exploitation framework"
 requires-python = ">=3.12"
 dependencies = [
     "docker",
+    "dnslib",
     "fastapi",
     "uvicorn",
     "sqlalchemy",

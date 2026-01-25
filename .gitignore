@@ -2,12 +2,12 @@
 /.venv_windows/*
 /build/*
 /src/reach.egg-info
-
 .venv_ubuntu/
 .ipynb_checkpoints/
 .pytest_cache/
 .vscode/
 /random/*
+ui/reach-ui/node_modules/
 
 # file types
 *.pyc

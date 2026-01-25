@@ -44,7 +44,6 @@ def register_static_routing(app: FastAPI) -> None:
     This includes health checks, debug endpoints, and the admin CRUD
     APIs for routes and logs.
     """
-
     @app.get("/api/health")
     async def health(db: Session = Depends(get_db)):
         """Simple health endpoint summarizing stored routes."""

@@ -363,6 +363,8 @@ def start_server(
     import importlib
     from multiprocessing import Process
 
+    from reach.core.app_logging import setup_logging
+
     # Load .env first (highest priority after real env vars)
     _load_dotenv()
 
@@ -517,6 +519,7 @@ def start_server(
     processes: list[Process] = []
 
     def _run_protocol(entry: Any, host_: str, port_: int) -> None:
+        setup_logging(level=log_level)
         if entry.server_type != "asgi":
             entry.run(host_, port_)
             return
@@ -526,11 +529,13 @@ def start_server(
             port=port_,
             reload=reload,
             log_level=log_level,
+            log_config=None,
             factory=True,
             server_header=False,
         )
 
     def _run_admin(host_: str, port_: int) -> None:
+        setup_logging(level=log_level)
         if reload:
             uvicorn.run(
                 "reach.core.server:create_admin_app",
@@ -538,6 +543,7 @@ def start_server(
                 port=port_,
                 reload=reload,
                 log_level=log_level,
+                log_config=None,
                 factory=True,
                 server_header=False,
             )
@@ -547,6 +553,7 @@ def start_server(
             host=host_,
             port=port_,
             log_level=log_level,
+            log_config=None,
             factory=True,
             server_header=False,
         )

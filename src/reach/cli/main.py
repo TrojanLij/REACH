@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import typer
 
-from . import dev, server, routes, logs, forge
+from . import dev, server, routes, logs, forge, dns
 
 app = typer.Typer(help="REACH command-line interface")
 
@@ -12,6 +12,7 @@ app.add_typer(server.app, name="server")
 app.add_typer(routes.app, name="routes")
 app.add_typer(logs.app, name="logs")
 app.add_typer(forge.app, name="forge")
+app.add_typer(dns.app, name="dns")
 app.add_typer(dev.app, name="dev", help="Developer utilities (dangerous in prod... but we all know it's not making it that far!)")
 
 
