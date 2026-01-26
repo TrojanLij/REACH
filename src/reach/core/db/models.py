@@ -42,6 +42,22 @@ def _json_to_obj(raw: str) -> dict[str, Any]:
     return {}
 
 
+def _list_to_json(value: list[str]) -> str:
+    """Serialize a list of strings to JSON."""
+    return json.dumps(value or [], ensure_ascii=False)
+
+
+def _json_to_list(raw: str) -> list[str]:
+    """Deserialize a JSON list into a list of strings."""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return [str(item) for item in data]
+    except Exception:
+        pass
+    return []
+
+
 class Route(Base):
     """Dynamic route definition stored in the database."""
 
@@ -157,3 +173,34 @@ class RuleState(Base):
     def set_payload(self, data: dict[str, Any]) -> None:
         """Persist state data as JSON."""
         self.data = _obj_to_json(data)
+
+
+class DnsZone(Base):
+    """DNS zone configuration for the REACH DNS service."""
+
+    __tablename__ = "dns_zones"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    zone = Column(String(255), nullable=False, unique=True, index=True)
+    a = Column(String(45), nullable=False)
+    aaaa = Column(String(45), nullable=True)
+    ttl = Column(Integer, nullable=False, default=60)
+    ns = Column(Text, nullable=False, default="[]")
+    soa_mname = Column(String(255), nullable=False)
+    soa_rname = Column(String(255), nullable=False)
+    soa_serial = Column(Integer, nullable=False, default=lambda: int(datetime.utcnow().timestamp()))
+    soa_refresh = Column(Integer, nullable=False, default=3600)
+    soa_retry = Column(Integer, nullable=False, default=600)
+    soa_expire = Column(Integer, nullable=False, default=1209600)
+    soa_minimum = Column(Integer, nullable=False, default=300)
+    wildcard = Column(Boolean, nullable=False, default=True)
+    enabled = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def ns_list(self) -> list[str]:
+        return _json_to_list(getattr(self, "ns", "[]"))
+
+    def set_ns(self, ns: list[str]) -> None:
+        self.ns = _list_to_json(ns)

@@ -82,3 +82,67 @@ class TriggerRuleOut(TriggerRuleBase):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class DnsZoneBase(BaseModel):
+    zone: str
+    a: str
+    aaaa: str | None = None
+    ttl: int = 60
+    ns: list[str] = Field(default_factory=list)
+    soa_mname: str
+    soa_rname: str
+    soa_serial: int
+    soa_refresh: int = 3600
+    soa_retry: int = 600
+    soa_expire: int = 1209600
+    soa_minimum: int = 300
+    wildcard: bool = True
+    enabled: bool = True
+
+
+class DnsZoneCreate(BaseModel):
+    """Payload for creating a new DNS zone."""
+
+    zone: str
+    a: str
+    aaaa: str | None = None
+    ttl: int = 60
+    ns: list[str] | None = None
+    soa_mname: str | None = None
+    soa_rname: str | None = None
+    soa_serial: int | None = None
+    soa_refresh: int = 3600
+    soa_retry: int = 600
+    soa_expire: int = 1209600
+    soa_minimum: int = 300
+    wildcard: bool = True
+    enabled: bool = True
+
+
+class DnsZoneUpdate(BaseModel):
+    """Payload for partially updating an existing DNS zone."""
+
+    a: str | None = None
+    aaaa: str | None = None
+    ttl: int | None = None
+    ns: list[str] | None = None
+    soa_mname: str | None = None
+    soa_rname: str | None = None
+    soa_serial: int | None = None
+    soa_refresh: int | None = None
+    soa_retry: int | None = None
+    soa_expire: int | None = None
+    soa_minimum: int | None = None
+    wildcard: bool | None = None
+    enabled: bool | None = None
+
+
+class DnsZoneOut(DnsZoneBase):
+    """DNS zone model returned from the admin API."""
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

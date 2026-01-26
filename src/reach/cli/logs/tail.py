@@ -38,6 +38,12 @@ def tail_logs(
         "--protocol",
         help="Only show log entries for this protocol (e.g. http, ftp).",
     ),
+    dns_label: str | None = typer.Option(
+        None,
+        "--dns-label",
+        "--operator-id",
+        help="Only show DNS logs for this left-most label (e.g., <label>.example.com)",
+    ),
     header_bool: bool = typer.Option(
         False,
         "--header",
@@ -60,6 +66,9 @@ def tail_logs(
             console.print(f"[red]Invalid regex:[/red] {e}")
             raise typer.Exit(code=1)
 
+    if dns_label and not protocol:
+        protocol = "dns"
+
     console.print(f"[cyan]Streaming logs from[/cyan] {core_url} (Ctrl+C to stop)")
 
     with httpx.Client(base_url=core_url, timeout=5.0) as client:
@@ -67,7 +76,12 @@ def tail_logs(
             try:
                 resp = client.get(
                     "/api/logs",
-                    params={"since_id": last_id, "limit": 200, "protocol": protocol},
+                    params={
+                        "since_id": last_id,
+                        "limit": 200,
+                        "protocol": protocol,
+                        "dns_label": dns_label,
+                    },
                     headers={"REACHTailLogServer": "True"},
                 )
                 resp.raise_for_status()
