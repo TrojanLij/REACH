@@ -3,20 +3,11 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from ...db import Base, engine
 from ...routing.dynamic import register_dynamic_routing
 from ..registry import register_protocol
-
-
-def init_db() -> None:
-    """
-    Initialize database schema.
-
-    Call this explicitly from the CLI or your own bootstrap code so that
-    app import does not have side effects.
-    """
-    Base.metadata.create_all(bind=engine)
+from ...db.init import init_db
 
 
 def create_public_app() -> FastAPI:
@@ -28,10 +19,18 @@ def create_public_app() -> FastAPI:
         title="REACH Core (public)",
         description="Public server for dynamic routes / payloads",
         version="0.1.0",
-        docs_url="None",
+        docs_url=None,
         redoc_url=None,
         openapi_url=None,
         # openapi_url="/openapi.json", # --> un-comment to test if the file is accidentally exposed
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=False,
     )
 
     # Attach dynamic routing + logging middleware

@@ -1,10 +1,16 @@
 [project]
 name = "reach"
 version = "0.1.3"
-description = "REACH web exploitation framework"
+description = "Request Engine for Attacks, Callbacks & Handling"
+authors = [
+    {name="TrojanLij"}
+] 
+readme = {file = "README.txt", content-type = "text/markdown"}
+
 requires-python = ">=3.12"
 dependencies = [
     "docker",
+    "dnslib",
     "fastapi",
     "uvicorn",
     "sqlalchemy",
@@ -13,6 +19,8 @@ dependencies = [
     "pymysql",
     "rich",
     "typer[all]",
+    "websockets",
+    "pyfiglet",
 ]
 
 [project.optional-dependencies]
@@ -24,6 +32,10 @@ core = [
 ]
 cli = [
     "pytest"
+]
+
+docs = [
+    "sphinx"
 ]
 
 [project.scripts]

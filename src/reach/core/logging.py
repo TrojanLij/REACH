@@ -8,7 +8,8 @@ import json
 from pydantic import BaseModel
 from sqlalchemy import select, delete
 
-from .db import SessionLocal, models
+from .db import models
+from .db.session import with_session
 
 
 class LoggedRequest(BaseModel):
@@ -54,6 +55,46 @@ def _json_to_mapping(raw: str) -> Dict[str, str]:
     return {}
 
 
+@with_session
+def _add_log_entry(
+    *,
+    db,
+    protocol: str,
+    method: str,
+    path: str,
+    command: str | None,
+    route_id: int | None,
+    status_code: int | None,
+    headers: Dict[str, str],
+    query_params: Dict[str, str],
+    body: str | None,
+    client_ip: str | None,
+    host: str | None,
+    body_encoding: str,
+    raw_bytes: str | None,
+    raw_bytes_encoding: str,
+) -> None:
+    entry = models.RequestLog(
+        timestamp=datetime.now(timezone.utc),
+        protocol=protocol,
+        method=method,
+        path=path,
+        command=command,
+        route_id=route_id,
+        status_code=status_code,
+        client_ip=client_ip,
+        host=host,
+        headers=_mapping_to_json(headers),
+        query_params=_mapping_to_json(query_params),
+        body=body,
+        body_encoding=body_encoding,
+        raw_bytes=raw_bytes,
+        raw_bytes_encoding=raw_bytes_encoding,
+    )
+    db.add(entry)
+    db.commit()
+
+
 def add_log(
     *,
     protocol: str = "http",
@@ -77,29 +118,22 @@ def add_log(
     This replaces the previous in-memory-only log so that
     pentesters can retain full history and payloads.
     """
-    db = SessionLocal()
-    try:
-        entry = models.RequestLog(
-            timestamp=datetime.now(timezone.utc),
-            protocol=protocol,
-            method=method,
-            path=path,
-            command=command,
-            route_id=route_id,
-            status_code=status_code,
-            client_ip=client_ip,
-            host=host,
-            headers=_mapping_to_json(headers),
-            query_params=_mapping_to_json(query_params),
-            body=body,
-            body_encoding=body_encoding,
-            raw_bytes=raw_bytes,
-            raw_bytes_encoding=raw_bytes_encoding,
-        )
-        db.add(entry)
-        db.commit()
-    finally:
-        db.close()
+    _add_log_entry(
+        protocol=protocol,
+        method=method,
+        path=path,
+        command=command,
+        route_id=route_id,
+        status_code=status_code,
+        headers=headers,
+        query_params=query_params,
+        body=body,
+        client_ip=client_ip,
+        host=host,
+        body_encoding=body_encoding,
+        raw_bytes=raw_bytes,
+        raw_bytes_encoding=raw_bytes_encoding,
+    )
 
 
 def _to_logged_request(row: models.RequestLog) -> LoggedRequest:
@@ -123,54 +157,47 @@ def _to_logged_request(row: models.RequestLog) -> LoggedRequest:
     )
 
 
-def get_logs(limit: int = 100, protocol: str | None = None) -> List[LoggedRequest]:
+@with_session
+def get_logs(limit: int = 100, protocol: str | None = None, *, db=None) -> List[LoggedRequest]:
     """
     Return the most recent logs, ordered newest-first.
     """
-    db = SessionLocal()
-    try:
-        stmt = select(models.RequestLog).order_by(models.RequestLog.id.desc())
-        if protocol:
-            stmt = stmt.where(models.RequestLog.protocol == protocol)
-        stmt = stmt.limit(limit)
-        rows = db.execute(stmt).scalars().all()
-        return [_to_logged_request(r) for r in rows]
-    finally:
-        db.close()
+    stmt = select(models.RequestLog).order_by(models.RequestLog.id.desc())
+    if protocol:
+        stmt = stmt.where(models.RequestLog.protocol == protocol)
+    stmt = stmt.limit(limit)
+    rows = db.execute(stmt).scalars().all()
+    return [_to_logged_request(r) for r in rows]
 
 
+@with_session
 def get_logs_since(
     since_id: int,
     limit: int = 100,
     protocol: str | None = None,
+    *,
+    db=None,
 ) -> List[LoggedRequest]:
     """
     Return logs with id > since_id, ordered by id ascending.
     """
-    db = SessionLocal()
-    try:
-        stmt = (
-            select(models.RequestLog)
-            .where(models.RequestLog.id > since_id)
-            .order_by(models.RequestLog.id.asc())
-        )
-        if protocol:
-            stmt = stmt.where(models.RequestLog.protocol == protocol)
-        if limit is not None:
-            stmt = stmt.limit(limit)
-        rows = db.execute(stmt).scalars().all()
-        return [_to_logged_request(r) for r in rows]
-    finally:
-        db.close()
+    stmt = (
+        select(models.RequestLog)
+        .where(models.RequestLog.id > since_id)
+        .order_by(models.RequestLog.id.asc())
+    )
+    if protocol:
+        stmt = stmt.where(models.RequestLog.protocol == protocol)
+    if limit is not None:
+        stmt = stmt.limit(limit)
+    rows = db.execute(stmt).scalars().all()
+    return [_to_logged_request(r) for r in rows]
 
 
-def clear_logs() -> None:
+@with_session
+def clear_logs(*, db=None) -> None:
     """
     Dev helper: clear all request logs from the database.
     """
-    db = SessionLocal()
-    try:
-        db.execute(delete(models.RequestLog))
-        db.commit()
-    finally:
-        db.close()
+    db.execute(delete(models.RequestLog))
+    db.commit()

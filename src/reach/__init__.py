@@ -8,4 +8,7 @@ Subpackages:
 """
 
 __all__ = ["core", "forge"] 
-__version__ = "0.1.0"
+
+from .versioning import get_runtime_version
+
+__version__ = get_runtime_version()

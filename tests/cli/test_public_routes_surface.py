@@ -2,6 +2,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from reach.core.globals import RESERVED_PREFIXES
+
 from reach.core.server import create_public_app, init_db
 
 ALL_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]

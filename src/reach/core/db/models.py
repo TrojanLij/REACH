@@ -1,11 +1,61 @@
 """SQLAlchemy ORM models backing REACH Core persistence."""
 from __future__ import annotations
 
+import json
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 
 from .base import Base
+
+
+def _mapping_to_json(value: dict[str, str]) -> str:
+    """Serialize a mapping to JSON for storage."""
+    return json.dumps(value or {}, ensure_ascii=False)
+
+
+def _json_to_mapping(raw: str) -> dict[str, str]:
+    """Deserialize a JSON mapping into a {str: str} dict."""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return {str(k): str(v) for k, v in data.items()}
+    except Exception:
+        pass
+    return {}
+
+
+def _obj_to_json(value: dict[str, Any]) -> str:
+    """Serialize a JSON-compatible dict for storage."""
+    return json.dumps(value or {}, ensure_ascii=False)
+
+
+def _json_to_obj(raw: str) -> dict[str, Any]:
+    """Deserialize a JSON object into a dict."""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return {}
+
+
+def _list_to_json(value: list[str]) -> str:
+    """Serialize a list of strings to JSON."""
+    return json.dumps(value or [], ensure_ascii=False)
+
+
+def _json_to_list(raw: str) -> list[str]:
+    """Deserialize a JSON list into a list of strings."""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return [str(item) for item in data]
+    except Exception:
+        pass
+    return []
 
 
 class Route(Base):
@@ -21,9 +71,20 @@ class Route(Base):
     content_type = Column(String(100), nullable=False, default="text/plain")
     # Encoding of response_body, e.g. "none" or "base64".
     body_encoding = Column(String(16), nullable=False, default="none")
+    # JSON-encoded mapping of header name to value.
+    response_headers = Column(Text, nullable=False, default="{}")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     # Manually maintained; updated in the admin API.
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def headers(self) -> dict[str, str]:
+        """Return response headers as a mapping."""
+        return _json_to_mapping(getattr(self, "response_headers", "{}"))
+
+    def set_headers(self, headers: dict[str, str]) -> None:
+        """Persist response headers as JSON."""
+        self.response_headers = _mapping_to_json(headers)
 
 
 class RequestLog(Base):
@@ -57,3 +118,89 @@ class RequestLog(Base):
     # Raw payload bytes for non-HTTP protocols (stored as text or base64).
     raw_bytes = Column(Text, nullable=True)
     raw_bytes_encoding = Column(String(16), nullable=False, default="none")
+
+
+class TriggerRule(Base):
+    """Rule definition for dynamic request matching and responses."""
+
+    __tablename__ = "trigger_rules"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(128), nullable=False)
+    enabled = Column(Boolean, nullable=False, default=True)
+    priority = Column(Integer, nullable=False, default=100)
+    match_criteria = Column(Text, nullable=False, default="{}")
+    action_data = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def match(self) -> dict[str, Any]:
+        """Return match criteria as a dict."""
+        return _json_to_obj(self.match_criteria)
+
+    def set_match(self, match: dict[str, Any]) -> None:
+        """Persist match criteria as JSON."""
+        self.match_criteria = _obj_to_json(match)
+
+    @property
+    def action(self) -> dict[str, Any]:
+        """Return rule action as a dict."""
+        return _json_to_obj(self.action_data)
+
+    def set_action(self, action: dict[str, Any]) -> None:
+        """Persist rule action as JSON."""
+        self.action_data = _obj_to_json(action)
+
+
+class RuleState(Base):
+    """State store for chaining rule logic across requests."""
+
+    __tablename__ = "rule_state"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    state_key = Column(String(255), nullable=False, index=True, unique=True)
+    data = Column(Text, nullable=False, default="{}")
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def payload(self) -> dict[str, Any]:
+        """Return stored state data as a dict."""
+        return _json_to_obj(self.data)
+
+    def set_payload(self, data: dict[str, Any]) -> None:
+        """Persist state data as JSON."""
+        self.data = _obj_to_json(data)
+
+
+class DnsZone(Base):
+    """DNS zone configuration for the REACH DNS service."""
+
+    __tablename__ = "dns_zones"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    zone = Column(String(255), nullable=False, unique=True, index=True)
+    a = Column(String(45), nullable=False)
+    aaaa = Column(String(45), nullable=True)
+    ttl = Column(Integer, nullable=False, default=60)
+    ns = Column(Text, nullable=False, default="[]")
+    soa_mname = Column(String(255), nullable=False)
+    soa_rname = Column(String(255), nullable=False)
+    soa_serial = Column(Integer, nullable=False, default=lambda: int(datetime.utcnow().timestamp()))
+    soa_refresh = Column(Integer, nullable=False, default=3600)
+    soa_retry = Column(Integer, nullable=False, default=600)
+    soa_expire = Column(Integer, nullable=False, default=1209600)
+    soa_minimum = Column(Integer, nullable=False, default=300)
+    wildcard = Column(Boolean, nullable=False, default=True)
+    enabled = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def ns_list(self) -> list[str]:
+        return _json_to_list(getattr(self, "ns", "[]"))
+
+    def set_ns(self, ns: list[str]) -> None:
+        self.ns = _list_to_json(ns)

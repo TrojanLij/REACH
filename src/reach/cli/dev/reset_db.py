@@ -20,6 +20,7 @@ def reset_db(
     This wipes all data. Intended for local/dev use.
     """
     from reach.core.db import Base, engine
+    from reach.core.db.init import init_db
 
     if not yes:
         typer.confirm(
@@ -28,6 +29,6 @@ def reset_db(
         )
 
     Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+    init_db(force=True)
 
     typer.echo("✅ Database schema reset (all tables dropped and recreated).")

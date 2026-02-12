@@ -45,3 +45,17 @@ def test_forge_payload_new_requires_endpoint_without_dry_run() -> None:
     code, output = _run_cli(["forge", "payload", "new", "xss_gh0st"])
     assert code != 0
     assert "Missing --endpoint" in output
+
+
+def test_version_lists_runtime_and_components() -> None:
+    code, output = _run_cli(["version"])
+    assert code == 0
+    assert "reach:" in output
+    assert "core:" in output
+    assert "ui:" in output
+
+
+def test_version_single_component() -> None:
+    code, output = _run_cli(["version", "--component", "ui"])
+    assert code == 0
+    assert "ui: 0.0.1" in output

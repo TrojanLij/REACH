@@ -1,0 +1,1 @@
+"""XSS payload generators."""

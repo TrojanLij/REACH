@@ -9,7 +9,9 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db, models
 from ..api.routes import router as routes_router
+from ..api.rules import router as rules_router
 from ..api.logs import router as logs_router
+from ..api.dns_zones import router as dns_zones_router
 
 
 class RouteDebugSummary(TypedDict):
@@ -43,12 +45,12 @@ def register_static_routing(app: FastAPI) -> None:
     This includes health checks, debug endpoints, and the admin CRUD
     APIs for routes and logs.
     """
-
     @app.get("/api/health")
     async def health(db: Session = Depends(get_db)):
         """Simple health endpoint summarizing stored routes."""
         count = db.query(models.Route).count()
-        return {"status": "ok", "routes": count}
+        dns_zones = db.query(models.DnsZone).count()
+        return {"status": "ok", "routes": count, "dns_zones": dns_zones}
 
     @app.get("/debug/routes")
     async def debug_routes(db: Session = Depends(get_db)):
@@ -60,5 +62,6 @@ def register_static_routing(app: FastAPI) -> None:
         }
 
     app.include_router(routes_router)
+    app.include_router(rules_router)
     app.include_router(logs_router)
-
+    app.include_router(dns_zones_router)

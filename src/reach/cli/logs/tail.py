@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import time
 import re
-
 import httpx
 import typer
 from rich.console import Console
@@ -32,12 +31,23 @@ def tail_logs(
     regex: str | None = typer.Option(
         None,
         "--regex",
-        help="Only show log entries where this regex matches (method/path/status/ip/host/body).",
+        help="Only show log entries where this regex matches (method/path/status/ip/host/body/headers).",
     ),
     protocol: str | None = typer.Option(
         None,
         "--protocol",
         help="Only show log entries for this protocol (e.g. http, ftp).",
+    ),
+    dns_label: str | None = typer.Option(
+        None,
+        "--dns-label",
+        "--operator-id",
+        help="Only show DNS logs for this left-most label (e.g., <label>.example.com)",
+    ),
+    header_bool: bool = typer.Option(
+        False,
+        "--header",
+        help="Shows the request headers"
     ),
 ) -> None:
     """
@@ -56,6 +66,9 @@ def tail_logs(
             console.print(f"[red]Invalid regex:[/red] {e}")
             raise typer.Exit(code=1)
 
+    if dns_label and not protocol:
+        protocol = "dns"
+
     console.print(f"[cyan]Streaming logs from[/cyan] {core_url} (Ctrl+C to stop)")
 
     with httpx.Client(base_url=core_url, timeout=5.0) as client:
@@ -63,7 +76,12 @@ def tail_logs(
             try:
                 resp = client.get(
                     "/api/logs",
-                    params={"since_id": last_id, "limit": 200, "protocol": protocol},
+                    params={
+                        "since_id": last_id,
+                        "limit": 200,
+                        "protocol": protocol,
+                        "dns_label": dns_label,
+                    },
                     headers={"REACHTailLogServer": "True"},
                 )
                 resp.raise_for_status()
@@ -90,8 +108,10 @@ def tail_logs(
                     client_ip = entry.get("client_ip") or "-"
                     host = entry.get("host") or "-"
                     body = entry.get("body") or ""
+                    headers = entry.get("headers") or {}
                     raw_bytes = entry.get("raw_bytes") or ""
                     query_params = entry.get("query_params") or {}
+                    headers = entry.get("headers") or {}
 
                     text_for_match = " ".join(
                         str(x)
@@ -105,13 +125,16 @@ def tail_logs(
                             client_ip,
                             host,
                             body,
+                            headers,
                             raw_bytes,
+                            headers
                         ]
                     )
 
                     if pattern is not None and not pattern.search(text_for_match):
                         continue
 
+                    route_match = "route" if route_id is not None else "no-route"
                     console.print(
                         f"[bold]{entry['id']:>5}[/bold] "
                         f"[dim]{ts}[/dim] "
@@ -120,7 +143,7 @@ def tail_logs(
                         f"{path} "
                         # f"(cmd={command}) "
                         f"-> [yellow]{status}[/yellow] "
-                        f"(route_id={route_id}, ip={client_ip}, host={host})"
+                        f"(match={route_match}, route_id={route_id}, ip={client_ip}, host={host})"
                     )
 
                     # For GET requests, also show query parameters (if any)
@@ -128,6 +151,13 @@ def tail_logs(
                         console.print("\tQuery:")
                         for key, value in query_params.items():
                             console.print(f"\t{key}={value}")
+
+                    # For headers in request
+                    if header_bool and isinstance(headers, dict) and headers:
+                        console.print("\tHeaders:")
+                        console.print(headers)
+                        # for key, value in headers.items():
+                        #     console.log(f"{str(key)}={str(value)}")
 
                     # For POST/PUT/PATCH, show body (if any)
                     if method.upper() in {"POST", "PUT", "PATCH"} and body:
