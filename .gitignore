@@ -1,6 +1,7 @@
 /.venv/*
 /.venv_windows/*
 /build/*
+/.build/*
 /src/reach.egg-info
 .venv_ubuntu/
 .ipynb_checkpoints/
