@@ -28,4 +28,4 @@ reach server start --role both --port 8000
 
 ## Protocol selection
 The CLI can run multiple public protocol listeners via presets.
-See `docs/config.md` for preset examples.
+See `config.md` for preset examples.

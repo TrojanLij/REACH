@@ -28,6 +28,10 @@ core = [
 cli = [
     "pytest"
 ]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+]
 
 [project.scripts]
 reach = "reach.cli.main:main"

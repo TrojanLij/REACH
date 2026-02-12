@@ -15,8 +15,8 @@ Typical workflow:
 4) Run DNS for OOB callbacks using DB-backed zones.
 
 See the component docs for details:
-- `docs/servers.md`
-- `docs/dns.md`
-- `docs/logs.md`
-- `docs/forge.md`
-- `docs/config.md`
+- `servers.md`
+- `dns.md`
+- `logs.md`
+- `forge.md`
+- `config.md`
