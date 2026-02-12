@@ -1,5 +1,16 @@
 # REACH docs
 
+```python
+   ____    _____      _      ____   _   _ 
+  |  _ \  | ____|    / \    / ___| | | | |
+  | |_) | |  _|     / _ \  | |     | |_| |
+  |  _ < _| |___ _ / ___ \ | |___ _|  _  |
+  |_| \_(_)_____(_)_/   \_(_)____(_)_| |_|
+  
+  Request Engine for Attacks, Callbacks & Handling
+  --@TrojanLij
+```
+
 Use this page as the documentation entry point.
 
 ## New here
@@ -15,7 +26,7 @@ Use this page as the documentation entry point.
 ## Payloads and rules
 - `forge.md` - generate payloads and create dynamic routes
 - `ifttt_rules.md` - rule matching, templates, actions, chaining
-- `ifttt_builder.html` - visual IFTTT rule builder
+<!-- - `ifttt_builder.html` - visual IFTTT rule builder -->
 
 ## CLI reference
 - `cli/index.md` - command map and command-specific examples

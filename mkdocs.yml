@@ -31,7 +31,7 @@ nav:
   - Payloads and Rules:
       - Forge: forge.md
       - IFTTT Rules: ifttt_rules.md
-      - IFTTT Builder: ifttt_builder.html
+    #   - IFTTT Builder: ifttt_builder.html
   - CLI Reference:
       - Overview: cli/index.md
       - Server: cli/server.md
