@@ -1,5 +1,16 @@
 # REACH
 
+```python
+   ____    _____      _      ____   _   _ 
+  |  _ \  | ____|    / \    / ___| | | | |
+  | |_) | |  _|     / _ \  | |     | |_| |
+  |  _ < _| |___ _ / ___ \ | |___ _|  _  |
+  |_| \_(_)_____(_)_/   \_(_)____(_)_| |_|
+  
+  Request Engine for Attacks, Callbacks & Handling
+  --@TrojanLij
+```
+
 **R.E.A.C.H. - Request Engine for Attacks, Callbacks & Handling**
 
 REACH is a modular web exploitation framework for authorized security testing. It provides a dynamic routing core for hosting external payloads and capturing callbacks, with structured request logging and extensible protocol support.
@@ -27,6 +38,45 @@ reach server start --role both --port 8000
 # DNS (separate service, DB-backed zones)
 reach dns serve --host 0.0.0.0 --port 53 --db-zones
 ```
+
+## Component versions
+REACH tracks component versions in `versions.toml`.
+
+- Show runtime + component versions:
+```bash
+reach version
+```
+- Show one component:
+```bash
+reach version --component ui
+```
+- Bump a component:
+```bash
+./scripts/bump_component_version.sh ui 0.0.2
+```
+  - Bumping `core` also updates `pyproject.toml` package version.
+  - Bumping `ui` also updates `ui/reach-ui/package.json`.
+
+### Auto release + changelog
+Use commit history to infer bump type and generate a per-component changelog entry.
+
+- Preview the next release without modifying files:
+```bash
+./scripts/release_component.sh ui --dry-run
+```
+- Apply bump + changelog files (no commit/tag):
+```bash
+./scripts/release_component.sh ui
+```
+- Apply and create release commit + tag:
+```bash
+./scripts/release_component.sh ui --commit --tag
+```
+
+Conventional Commit bump rules:
+- `major`: commit subject with `!` (example `feat(core)!:`) or body with `BREAKING CHANGE`
+- `minor`: `feat:`
+- `patch`: all other commit types with changes
 
 ## Disclaimer
 REACH is intended for **authorized** security testing only. It should be deployed temporarily and with appropriate access controls for the engagement scope.

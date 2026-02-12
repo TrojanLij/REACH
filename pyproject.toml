@@ -15,6 +15,7 @@ dependencies = [
     "rich",
     "typer[all]",
     "websockets",
+    "pyfiglet",
 ]
 
 [project.optional-dependencies]
