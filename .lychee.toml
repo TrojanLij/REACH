@@ -1,6 +1,3 @@
-verbose = true
-no_progress = true
-
 exclude = [
   "http://127.0.0.1",
   "https://127.0.0.1",
@@ -11,4 +8,3 @@ exclude = [
   "http://PUBLIC_IP",
   "http://DNS_IP"
 ]
-
