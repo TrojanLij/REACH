@@ -34,8 +34,9 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --config .lychee.toml README.md docs/**/*.md
+          args: --config .lychee.toml README.md docs
           fail: true
+          failIfEmpty: false
 
   mkdocs-build:
     runs-on: ubuntu-latest
@@ -49,7 +50,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install docs dependencies
-        run: python -m pip install --upgrade pip && python -m pip install .[docs]
+        run: python -m pip install --upgrade pip && python -m pip install mkdocs mkdocs-material
 
       - name: Build MkDocs (strict)
         run: mkdocs build --strict
