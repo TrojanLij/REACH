@@ -1,0 +1,44 @@
+site_name: REACH
+site_description: Request Engine for Attacks, Callbacks, and Handling
+repo_name: REACH
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - Operations:
+      - Servers and Protocols: servers.md
+      - DNS Service: dns.md
+      - Logs: logs.md
+      - Configuration: config.md
+      - Deployment: deployment.md
+      - Troubleshooting: troubleshooting.md
+  - Payloads and Rules:
+      - Forge: forge.md
+      - IFTTT Rules: ifttt_rules.md
+      - IFTTT Builder: ifttt_builder.html
+  - CLI Reference:
+      - Overview: cli/index.md
+      - Server: cli/server.md
+      - Routes: cli/routes.md
+      - Logs: cli/logs.md
+      - Forge: cli/forge.md
+      - DNS: cli/dns.md
+      - Dev: cli/dev.md
+  - Legacy Overview: overview.md
+
