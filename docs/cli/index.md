@@ -20,12 +20,7 @@ Run `--help` on any command for full option details.
 - `dev.md`
 
 ## Version commands
-Show runtime + component versions:
+Show REACH package version:
 ```bash
 reach version
-```
-
-Show a single component:
-```bash
-reach version --component ui
 ```

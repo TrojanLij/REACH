@@ -11,7 +11,21 @@
   --@TrojanLij
 ```
 
-Use this page as the documentation entry point.
+REACH is a modular web exploitation framework for authorized security testing. It provides a dynamic routing core for hosting external payloads and capturing callbacks, with structured request logging and extensible protocol support.
+
+Key ideas:
+- Dynamic HTTP routes managed at runtime
+- Centralized request logging for OOB workflows
+- Separate public/admin surfaces
+- Protocol extensions (HTTP, FTP, WSS, DNS)
+
+## Share in 30 seconds
+REACH helps red teams run callback infrastructure in a structured way:
+- expose payload and callback endpoints quickly
+- capture inbound traffic centrally across protocols
+- manage routes/rules/zones from an admin API
+
+Use only with explicit authorization and approved scope.
 
 ## New here
 - `getting-started.md` - install, run, and verify your first callback flow
