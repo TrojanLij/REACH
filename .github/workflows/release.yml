@@ -15,7 +15,49 @@ permissions:
   contents: write
 
 jobs:
+  verify-e2e:
+    name: Verify E2E (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.x"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: false
+
+      - name: Show Python version
+        run: python --version
+
+      - name: Install OS dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y dnsutils curl
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install .
+          pip install pytest
+
+      - name: Run E2E tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          pytest tests/reach/e2e
+
   release:
+    needs: verify-e2e
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -80,14 +122,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Backend smoke tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          pip install -e .[forge,core,cli]
-          pytest -q tests/reach/cli/test_forge_cli.py
 
       - name: Build release notes
         id: notes

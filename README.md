@@ -1,4 +1,4 @@
-![Python 3.12  & latest](https://github.com/TrojanLij/REACH/actions/workflows/e2e-tests.yml/badge.svg?branch=main)
+![Python 3.12 & latest](https://github.com/TrojanLij/REACH/actions/workflows/e2e-tests.yml/badge.svg?branch=main)
 ![Release](https://github.com/TrojanLij/REACH/actions/workflows/release.yml/badge.svg?branch=main)
 
 
