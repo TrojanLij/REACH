@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .db.init import init_db
 from .protocols.http.server import create_app, create_public_app
 from .routing.static import register_static_routing
+from reach.versioning import get_runtime_version
 
 def create_admin_app() -> FastAPI:
     """
@@ -17,7 +18,7 @@ def create_admin_app() -> FastAPI:
     app = FastAPI(
         title="REACH Core (admin)",
         description="Admin API for managing routes and logs",
-        version="0.2.0",
+        version=get_runtime_version(),
         docs_url="/api/docs",
         redoc_url="/api/redoc",
         openapi_url="/api/openapi.json",

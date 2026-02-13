@@ -13,6 +13,7 @@ from ...routing.reserved import reject_reserved_paths
 from ..logging import log_protocol_request
 from ..registry import register_protocol
 from ...db.init import init_db
+from reach.versioning import get_runtime_version
 
 
 @with_session
@@ -32,7 +33,7 @@ def create_public_app() -> FastAPI:
     app = FastAPI(
         title="REACH Core (public WSS)",
         description="Public server for dynamic WebSocket routes",
-        version="0.1.0",
+        version=get_runtime_version(),
         docs_url=None,
         redoc_url=None,
         openapi_url=None,

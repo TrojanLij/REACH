@@ -5,7 +5,7 @@ import typer
 import pyfiglet
 
 from . import dev, server, routes, logs, forge, dns
-from reach.versioning import get_component_version, get_component_versions, get_runtime_version
+from reach.versioning import get_runtime_version
 
 app = typer.Typer(help="REACH command-line interface")
 
@@ -19,28 +19,9 @@ app.add_typer(dev.app, name="dev", help="Developer utilities (dangerous in prod.
 
 
 @app.command("version")
-def version(
-    component: str | None = typer.Option(
-        None,
-        "--component",
-        "-c",
-        help="Show only a single component version from versions.toml",
-    )
-) -> None:
-    if component:
-        value = get_component_version(component)
-        if value is None:
-            raise typer.BadParameter(f"Unknown component: {component}")
-        typer.echo(f"{component}: {value}")
-        return
-
+def version() -> None:
+    """Show the single package version for REACH."""
     typer.echo(f"reach: {get_runtime_version()}")
-    component_versions = get_component_versions()
-    if not component_versions:
-        return
-
-    for name, value in component_versions.items():
-        typer.echo(f"{name}: {value}")
 
 
 def main() -> None:

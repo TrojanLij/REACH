@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ...routing.dynamic import register_dynamic_routing
 from ..registry import register_protocol
 from ...db.init import init_db
+from reach.versioning import get_runtime_version
 
 
 def create_public_app() -> FastAPI:
@@ -18,7 +19,7 @@ def create_public_app() -> FastAPI:
     app = FastAPI(
         title="REACH Core (public)",
         description="Public server for dynamic routes / payloads",
-        version="0.1.0",
+        version=get_runtime_version(),
         docs_url=None,
         redoc_url=None,
         openapi_url=None,

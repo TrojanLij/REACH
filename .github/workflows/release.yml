@@ -3,16 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - "core/v*"
-      - "cli/v*"
-      - "forge/v*"
-      - "dns/v*"
-      - "ui/v*"
-      - "ifttt_plugin/v*"
+      - "v*"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to release (example: ui/v0.0.2)"
+        description: "Existing tag to release (example: v0.1.3)"
         required: true
         type: string
 
@@ -28,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve tag and component
+      - name: Resolve tag and version
         id: meta
         shell: bash
         run: |
@@ -40,14 +35,13 @@ jobs:
             tag="${GITHUB_REF_NAME}"
           fi
 
-          if [[ ! "$tag" =~ ^([a-z_]+)/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          if [[ ! "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
             echo "Invalid tag format: $tag"
-            echo "Expected: <component>/v<semver> (example: core/v0.1.4)"
+            echo "Expected: v<semver> (example: v0.1.4)"
             exit 1
           fi
 
-          component="${BASH_REMATCH[1]}"
-          version="${BASH_REMATCH[2]}"
+          version="${BASH_REMATCH[1]}"
 
           # For manual dispatch, ensure the tag exists in remote.
           git fetch --tags --force
@@ -58,88 +52,64 @@ jobs:
 
           {
             echo "tag=$tag"
-            echo "component=$component"
             echo "version=$version"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Validate versions.toml matches tag
+      - name: Validate pyproject version matches tag
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
+          import os
           import tomllib
           from pathlib import Path
-          import os
 
-          component = os.environ["COMPONENT"]
           expected = os.environ["VERSION"]
-          data = tomllib.loads(Path("versions.toml").read_text(encoding="utf-8"))
-          actual = str(data.get("components", {}).get(component, ""))
+          data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          actual = str(data.get("project", {}).get("version", ""))
           if actual != expected:
             raise SystemExit(
-                f"versions.toml mismatch for {component}: expected {expected}, found {actual!r}"
+                f"pyproject.toml version mismatch: expected {expected}, found {actual!r}"
             )
-          print(f"versions.toml OK: {component}={actual}")
+          print(f"pyproject.toml OK: version={actual}")
           PY
         env:
-          COMPONENT: ${{ steps.meta.outputs.component }}
           VERSION: ${{ steps.meta.outputs.version }}
 
       - name: Setup Python
-        if: ${{ steps.meta.outputs.component != 'ui' }}
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Backend smoke tests
-        if: ${{ steps.meta.outputs.component != 'ui' }}
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
           pip install -e .[forge,core,cli]
-          pytest -q tests/cli/test_forge_cli.py
+          pytest -q tests/reach/cli/test_forge_cli.py
 
-      - name: Setup Node
-        if: ${{ steps.meta.outputs.component == 'ui' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: "ui/reach-ui/package-lock.json"
-
-      - name: UI build
-        if: ${{ steps.meta.outputs.component == 'ui' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd ui/reach-ui
-          npm ci
-          npm run build
-
-      - name: Build release notes from changelog
+      - name: Build release notes
         id: notes
         shell: bash
         run: |
           set -euo pipefail
-          component="${{ steps.meta.outputs.component }}"
           version="${{ steps.meta.outputs.version }}"
-          changelog="CHANGELOG.${component}.md"
           notes_file="release_notes.md"
 
-          if [[ -f "$changelog" ]]; then
+          if [[ -f "CHANGELOG.md" ]]; then
             awk -v v="v${version}" '
-              $0 ~ ("^## " v " - ") {in_section=1; print; next}
-              in_section && $0 ~ "^## v" {exit}
+              $0 ~ ("^## " v "($| )") {in_section=1; print; next}
+              in_section && $0 ~ "^## " {exit}
               in_section {print}
-            ' "$changelog" > "$notes_file"
+            ' CHANGELOG.md > "$notes_file"
           fi
 
           if [[ ! -s "$notes_file" ]]; then
             {
-              echo "Release ${component}/v${version}"
+              echo "Release v${version}"
               echo
-              echo "No changelog section found in ${changelog} for v${version}."
+              echo "No changelog section found in CHANGELOG.md for v${version}."
             } > "$notes_file"
           fi
 
@@ -150,3 +120,4 @@ jobs:
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           body_path: ${{ steps.notes.outputs.notes_path }}
+

@@ -5,15 +5,6 @@ from pathlib import Path
 import tomllib
 
 
-def _find_repo_versions_file() -> Path | None:
-    start = Path(__file__).resolve()
-    for parent in start.parents:
-        candidate = parent / "versions.toml"
-        if candidate.exists():
-            return candidate
-    return None
-
-
 def _find_repo_pyproject_file() -> Path | None:
     start = Path(__file__).resolve()
     for parent in start.parents:
@@ -23,27 +14,8 @@ def _find_repo_pyproject_file() -> Path | None:
     return None
 
 
-def get_component_versions() -> dict[str, str]:
-    versions_file = _find_repo_versions_file()
-    if versions_file is None:
-        return {}
-
-    with versions_file.open("rb") as f:
-        data = tomllib.load(f)
-
-    components = data.get("components", {})
-    return {
-        str(name): str(version)
-        for name, version in components.items()
-    }
-
-
-def get_component_version(component: str) -> str | None:
-    versions = get_component_versions()
-    return versions.get(component)
-
-
 def get_runtime_version() -> str:
+    """Return the single runtime version for the REACH package."""
     try:
         return pkg_version("reach")
     except PackageNotFoundError:

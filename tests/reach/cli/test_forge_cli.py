@@ -47,15 +47,13 @@ def test_forge_payload_new_requires_endpoint_without_dry_run() -> None:
     assert "Missing --endpoint" in output
 
 
-def test_version_lists_runtime_and_components() -> None:
+def test_version_lists_runtime() -> None:
     code, output = _run_cli(["version"])
     assert code == 0
     assert "reach:" in output
-    assert "core:" in output
-    assert "ui:" in output
 
 
-def test_version_single_component() -> None:
+def test_version_has_no_component_option() -> None:
     code, output = _run_cli(["version", "--component", "ui"])
-    assert code == 0
-    assert "ui: 0.0.1" in output
+    assert code != 0
+    assert "No such option" in output
