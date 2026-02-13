@@ -1,0 +1,122 @@
+name: E2E Tests
+
+on:
+  push:
+    paths:
+      - "src/**"
+      - "tests/reach/e2e/**"
+      - "pyproject.toml"
+      - ".github/workflows/e2e-tests.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/reach/e2e/**"
+      - "pyproject.toml"
+      - ".github/workflows/e2e-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: E2E (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.x"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: false
+
+      - name: Show Python version
+        run: python --version
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dnsutils curl
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pytest
+
+      - name: Run E2E pytest
+        id: run_e2e
+        continue-on-error: true
+        run: |
+          pytest tests/reach/e2e --junitxml=e2e-junit.xml
+
+      - name: Compute E2E score
+        id: score
+        if: always()
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          import os
+
+          xml_path = Path("e2e-junit.xml")
+          if not xml_path.exists():
+              print("score=0.00", file=open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8"))
+              print("total=0", file=open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8"))
+              print("passed=0", file=open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8"))
+              print("failed=0", file=open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8"))
+              print("errors=0", file=open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8"))
+              print("skipped=0", file=open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8"))
+              raise SystemExit(0)
+
+          root = ET.parse(xml_path).getroot()
+          tests = int(root.attrib.get("tests", 0))
+          failures = int(root.attrib.get("failures", 0))
+          errors = int(root.attrib.get("errors", 0))
+          skipped = int(root.attrib.get("skipped", 0))
+          passed = max(tests - failures - errors - skipped, 0)
+          scored_total = max(tests - skipped, 1)
+          score = (passed / scored_total) * 100.0
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"score={score:.2f}\n")
+              out.write(f"total={tests}\n")
+              out.write(f"passed={passed}\n")
+              out.write(f"failed={failures}\n")
+              out.write(f"errors={errors}\n")
+              out.write(f"skipped={skipped}\n")
+          PY
+
+      - name: Publish E2E summary
+        if: always()
+        run: |
+          {
+            echo "## E2E Test Score"
+            echo ""
+            echo "- Score: **${{ steps.score.outputs.score }}%**"
+            echo "- Total: **${{ steps.score.outputs.total }}**"
+            echo "- Passed: **${{ steps.score.outputs.passed }}**"
+            echo "- Failed: **${{ steps.score.outputs.failed }}**"
+            echo "- Errors: **${{ steps.score.outputs.errors }}**"
+            echo "- Skipped: **${{ steps.score.outputs.skipped }}**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-junit
+          path: e2e-junit.xml
+          if-no-files-found: warn
+
+      - name: Fail on E2E failures
+        if: always()
+        run: |
+          if [ "${{ steps.run_e2e.outcome }}" != "success" ]; then
+            echo "E2E tests failed."
+            exit 1
+          fi
