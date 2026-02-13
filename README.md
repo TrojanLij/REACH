@@ -60,27 +60,5 @@ reach server start --role both --port 8000
 reach dns serve --host 0.0.0.0 --port 53 --db-zones
 ```
 
-## Component versions
-REACH uses a single package version from `pyproject.toml`.
-
-- Show runtime version:
-```bash
-reach version
-```
-
-### Auto release + changelog
-Use semantic tags that match the package version:
-```bash
-git tag -a v0.1.3 -m "release v0.1.3"
-git push origin v0.1.3
-```
-
-### GitHub release workflow
-The repository includes `.github/workflows/release.yml`:
-- Trigger on pushed tags `v*`
-- Validate tag version matches `pyproject.toml` package version
-- Run backend smoke tests
-- Create a GitHub Release
-
 ## Disclaimer
 REACH is intended for **authorized** security testing only. It should be deployed temporarily and with appropriate access controls for the engagement scope.
