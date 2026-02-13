@@ -35,6 +35,8 @@ class RouteCreate(RouteBase):
 class RouteUpdate(BaseModel):
     """Payload for partially updating an existing route."""
 
+    method: str | None = None
+    path: str | None = None
     status_code: int | None = None
     response_body: str | None = None
     content_type: str | None = None

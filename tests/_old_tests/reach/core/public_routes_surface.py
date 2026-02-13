@@ -8,20 +8,7 @@ from reach.core.server import create_public_app, init_db
 
 ALL_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 # Known paths we want to keep non-public (docs, openapi, debug/admin)
-SHOULD_404 = [
-    "/docs",
-    "/docs/",
-    "/redoc",
-    "/redoc/",
-    "/openapi.json",
-    "/api",
-    "/api/",
-    "/api/routes",
-    "/api/logs",
-    "/api/health",
-    "/debug/routes",
-    "/favicon.ico",
-]
+SHOULD_404 = RESERVED_PREFIXES
 
 
 @pytest.fixture(scope="module")
