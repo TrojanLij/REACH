@@ -2,12 +2,17 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 
 from .base import Base
+
+
+def _utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(UTC)
 
 
 def _mapping_to_json(value: dict[str, str]) -> str:
@@ -73,9 +78,9 @@ class Route(Base):
     body_encoding = Column(String(16), nullable=False, default="none")
     # JSON-encoded mapping of header name to value.
     response_headers = Column(Text, nullable=False, default="{}")
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=_utc_now)
     # Manually maintained; updated in the admin API.
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=_utc_now)
 
     @property
     def headers(self) -> dict[str, str]:
@@ -98,7 +103,7 @@ class RequestLog(Base):
     __tablename__ = "request_logs"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    timestamp = Column(DateTime, nullable=False, default=_utc_now)
     protocol = Column(String(16), nullable=False, default="http")
     method = Column(String(10), nullable=False)
     path = Column(String(255), nullable=False)
@@ -131,8 +136,8 @@ class TriggerRule(Base):
     priority = Column(Integer, nullable=False, default=100)
     match_criteria = Column(Text, nullable=False, default="{}")
     action_data = Column(Text, nullable=False, default="{}")
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=_utc_now)
+    updated_at = Column(DateTime, nullable=False, default=_utc_now)
 
     @property
     def match(self) -> dict[str, Any]:
@@ -162,8 +167,8 @@ class RuleState(Base):
     state_key = Column(String(255), nullable=False, index=True, unique=True)
     data = Column(Text, nullable=False, default="{}")
     expires_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=_utc_now)
+    updated_at = Column(DateTime, nullable=False, default=_utc_now)
 
     @property
     def payload(self) -> dict[str, Any]:
@@ -188,15 +193,15 @@ class DnsZone(Base):
     ns = Column(Text, nullable=False, default="[]")
     soa_mname = Column(String(255), nullable=False)
     soa_rname = Column(String(255), nullable=False)
-    soa_serial = Column(Integer, nullable=False, default=lambda: int(datetime.utcnow().timestamp()))
+    soa_serial = Column(Integer, nullable=False, default=lambda: int(_utc_now().timestamp()))
     soa_refresh = Column(Integer, nullable=False, default=3600)
     soa_retry = Column(Integer, nullable=False, default=600)
     soa_expire = Column(Integer, nullable=False, default=1209600)
     soa_minimum = Column(Integer, nullable=False, default=300)
     wildcard = Column(Boolean, nullable=False, default=True)
     enabled = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=_utc_now)
+    updated_at = Column(DateTime, nullable=False, default=_utc_now)
 
     @property
     def ns_list(self) -> list[str]:

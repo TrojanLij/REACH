@@ -1,7 +1,7 @@
 """Admin CRUD API for REACH Core dynamic routes."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import wraps
 from typing import Callable, Any
 
@@ -49,11 +49,14 @@ def normalize_route_input(fn: Callable[..., Any]) -> Callable[..., Any]:
             )
 
         route_upd = kwargs.get("route_upd")
-        if isinstance(route_upd, RouteUpdate) and route_upd.headers is not None:
-            kwargs["route_upd"] = _model_copy(
-                route_upd,
-                {"headers": _normalize_headers(route_upd.headers)},
-            )
+        if isinstance(route_upd, RouteUpdate):
+            updates: dict[str, Any] = {}
+            if route_upd.path is not None:
+                updates["path"] = _normalize_path(route_upd.path)
+            if route_upd.headers is not None:
+                updates["headers"] = _normalize_headers(route_upd.headers)
+            if updates:
+                kwargs["route_upd"] = _model_copy(route_upd, updates)
 
         return fn(*args, **kwargs)
 
@@ -62,6 +65,12 @@ def normalize_route_input(fn: Callable[..., Any]) -> Callable[..., Any]:
 
 def _apply_route_updates(db_route: models.Route, route_upd: RouteUpdate) -> None:
     """Apply a partial RouteUpdate to an existing Route row."""
+    if route_upd.method is not None:
+        db_route.method = route_upd.method.upper()
+
+    if route_upd.path is not None:
+        db_route.path = route_upd.path
+
     if route_upd.status_code is not None:
         db_route.status_code = route_upd.status_code
 
@@ -136,8 +145,23 @@ def update_route(route_id: int, route_upd: RouteUpdate, db: Session = Depends(ge
     if not db_route:
         raise HTTPException(status_code=404, detail="Route not found")
 
+    new_method = route_upd.method.upper() if route_upd.method is not None else db_route.method
+    new_path = route_upd.path if route_upd.path is not None else db_route.path
+    if new_method != db_route.method or new_path != db_route.path:
+        dup_stmt = select(models.Route).where(
+            models.Route.id != route_id,
+            models.Route.method == new_method,
+            models.Route.path == new_path,
+        )
+        existing = db.execute(dup_stmt).scalar_one_or_none()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="Route with this method and path already exists",
+            )
+
     _apply_route_updates(db_route, route_upd)
-    db_route.updated_at = datetime.utcnow()
+    db_route.updated_at = datetime.now(UTC)
 
     db.add(db_route)
     db.commit()

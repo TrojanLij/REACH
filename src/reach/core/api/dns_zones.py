@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 import ipaddress
 from typing import Any
 
@@ -154,7 +154,7 @@ def update_zone(zone_id: int, zone_upd: DnsZoneUpdate, db: Session = Depends(get
     if not db_zone:
         raise HTTPException(status_code=404, detail="Zone not found")
     _apply_updates(db_zone, zone_upd)
-    db_zone.updated_at = datetime.utcnow()
+    db_zone.updated_at = datetime.now(UTC)
     db.add(db_zone)
     db.commit()
     db.refresh(db_zone)

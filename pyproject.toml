@@ -40,3 +40,15 @@ docs = [
 
 [project.scripts]
 reach = "reach.cli.main:main"
+
+[tool.pytest.ini_options]
+minversion = "9.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra -vv"
+markers = [
+    "unit: fast isolated tests",
+    "integration: tests that touch real components (db/process/network)",
+    "e2e: full workflow tests across multiple components",
+    "slow: tests that are expected to take longer than typical unit tests",
+]
