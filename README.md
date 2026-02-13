@@ -1,3 +1,7 @@
+![Python 3.12 & latest](https://github.com/TrojanLij/REACH/actions/workflows/e2e-tests.yml/badge.svg?branch=main)
+![Release](https://github.com/TrojanLij/REACH/actions/workflows/release.yml/badge.svg?branch=main)
+
+
 ```python
    ____    _____      _      ____   _   _ 
   |  _ \  | ____|    / \    / ___| | | | |
@@ -59,28 +63,6 @@ reach server start --role both --port 8000
 # DNS (separate service, DB-backed zones)
 reach dns serve --host 0.0.0.0 --port 53 --db-zones
 ```
-
-## Component versions
-REACH uses a single package version from `pyproject.toml`.
-
-- Show runtime version:
-```bash
-reach version
-```
-
-### Auto release + changelog
-Use semantic tags that match the package version:
-```bash
-git tag -a v0.1.3 -m "release v0.1.3"
-git push origin v0.1.3
-```
-
-### GitHub release workflow
-The repository includes `.github/workflows/release.yml`:
-- Trigger on pushed tags `v*`
-- Validate tag version matches `pyproject.toml` package version
-- Run backend smoke tests
-- Create a GitHub Release
 
 ## Disclaimer
 REACH is intended for **authorized** security testing only. It should be deployed temporarily and with appropriate access controls for the engagement scope.
