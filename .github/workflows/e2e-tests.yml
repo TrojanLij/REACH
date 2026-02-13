@@ -52,7 +52,7 @@ jobs:
         id: run_e2e
         continue-on-error: true
         run: |
-          pytest tests/reach/e2e --junitxml=e2e-junit.xml
+          pytest tests/reach/e2e --junitxml=e2e-junit-${{ matrix.python-version }}.xml
 
       - name: Compute E2E score
         id: score
@@ -63,7 +63,7 @@ jobs:
           from pathlib import Path
           import os
 
-          xml_path = Path("e2e-junit.xml")
+          xml_path = Path("e2e-junit-${{ matrix.python-version }}.xml")
           if not xml_path.exists():
               print("score=0.00", file=open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8"))
               print("total=0", file=open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8"))
@@ -74,10 +74,18 @@ jobs:
               raise SystemExit(0)
 
           root = ET.parse(xml_path).getroot()
-          tests = int(root.attrib.get("tests", 0))
-          failures = int(root.attrib.get("failures", 0))
-          errors = int(root.attrib.get("errors", 0))
-          skipped = int(root.attrib.get("skipped", 0))
+          testcases = root.findall(".//testcase")
+          tests = len(testcases)
+          failures = 0
+          errors = 0
+          skipped = 0
+          for case in testcases:
+              if case.find("failure") is not None:
+                  failures += 1
+              if case.find("error") is not None:
+                  errors += 1
+              if case.find("skipped") is not None:
+                  skipped += 1
           passed = max(tests - failures - errors - skipped, 0)
           scored_total = max(tests - skipped, 1)
           score = (passed / scored_total) * 100.0
@@ -109,8 +117,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-junit
-          path: e2e-junit.xml
+          name: e2e-junit-${{ matrix.python-version }}
+          path: e2e-junit-${{ matrix.python-version }}.xml
           if-no-files-found: warn
 
       - name: Fail on E2E failures
