@@ -9,6 +9,7 @@
 .vscode/
 /random/*
 ui/reach-ui/node_modules/
+/site/*
 
 # file types
 *.pyc
