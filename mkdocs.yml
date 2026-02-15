@@ -23,19 +23,20 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - Architecture: architecture.md
-  - Operations:
-      - Servers and Protocols: servers.md
-      - DNS Service: dns.md
-      - Logs: logs.md
-      - Configuration: config.md
-      - Deployment: deployment.md
-      - Troubleshooting: troubleshooting.md
-  - Payloads and Rules:
-      - Forge: forge.md
-      - IFTTT Rules: ifttt_rules.md
-    #   - IFTTT Builder: ifttt_builder.html
-  - CLI Reference:
+  - CORE:
+      - Architecture Overview: core/architecture.md
+      - Core Runtime: core/core-runtime.md
+      - Dynamic Routing (Public): core/dynamic-routing.md
+      - Static Routing (Admin): core/admin-api.md
+      - Protocols Architecture: 
+        - Overview: core/protocols/protocols.md
+        - HTTP: core/protocols/http.md
+        - FTP: core/protocols/ftp.md
+        - WSS: core/protocols/wss.md
+      - Logging Pipeline: core/logging-pipeline.md
+      - Persistence Layer: core/persistence-layer.md
+      - Security Boundaries: core/security-boundaries.md
+  - CLI:
       - Overview: cli/index.md
       - Server: cli/server.md
       - Routes: cli/routes.md
@@ -43,5 +44,16 @@ nav:
       - Forge: cli/forge.md
       - DNS: cli/dns.md
       - Dev: cli/dev.md
+  - FORGE:
+      - Forge Overview: forge/forge.md
+      - Payload Workflows: forge/payloads.md
+      - Plugins and Subpages: forge/plugins.md
+      - Trigger Rules (IFTTT): forge/ifttt_rules.md
+  - OPERATIONS (TO-FIX):
+      - Servers and Protocols: operations/servers.md
+      - DNS Service: operations/dns.md
+      - Logs: operations/logs.md
+      - Configuration: operations/config.md
+      - Deployment: operations/deployment.md
+      - Troubleshooting: operations/troubleshooting.md
   - Legacy Overview: overview.md
-
