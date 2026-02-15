@@ -1,6 +1,7 @@
 site_name: REACH
 site_description: Request Engine for Attacks, Callbacks, and Handling
 repo_name: REACH
+repo_url: https://github.com/TrojanLij/REACH
 
 theme:
   name: material
@@ -8,6 +9,8 @@ theme:
     - navigation.sections
     - navigation.top
     - content.code.copy
+  palette:
+    scheme: slate
 
 markdown_extensions:
   - admonition
