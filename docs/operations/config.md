@@ -3,6 +3,7 @@
 REACH loads config in this order: CLI flags > preset > env/.env > defaults.
 
 ## Environment variables
+
 - `REACH_DB_URL` - SQLAlchemy URL (use Postgres for multi-host)
 - `REACH_DB_FILE` - SQLite file path (used when no DB URL)
 - `REACH_DB_ECHO=1` - SQLAlchemy echo
@@ -54,3 +55,8 @@ DNS host:
 ```bash
 reach dns serve --host DNS_IP --port 53 --db-zones
 ```
+
+See also:
+
+- [Persistence Layer](../core/persistence-layer.md)
+- [Security Boundaries](../core/security-boundaries.md)

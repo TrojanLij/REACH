@@ -17,6 +17,7 @@ REACH_DB_URL=postgresql://user:pass@DB_IP:5432/reach
 ```
 
 Example split:
+
 - admin host: `reach server start --role admin --host ADMIN_IP --port 8001`
 - public host: `reach server start --role public --host PUBLIC_IP --port 8000`
 - dns host: `reach dns serve --host DNS_IP --port 53 --db-zones`
@@ -30,6 +31,7 @@ reach server start --role both --docker --image reach:local
 ```
 
 Common flags:
+
 - `--rebuild` rebuild image before run
 - `--name` set container name
 - `--dockerfile` choose Dockerfile path
@@ -37,12 +39,16 @@ Common flags:
 - `--detach/--no-detach` run background or foreground
 
 ## Security baseline
+
 - Bind admin to private interfaces only.
 - Use strict firewall rules around DNS and admin ports.
 - Use short-lived infrastructure and engagement-specific domains.
 - Keep explicit authorization artifacts for every deployment.
 
 ## Related docs
-- `config.md`
-- `servers.md`
-- `dns.md`
+
+- [Configuration](config.md)
+- [Persistence Layer](../core/persistence-layer.md)
+- [Security Boundaries](../core/security-boundaries.md)
+- [Servers and Protocols](servers.md)
+- [DNS Service](dns.md)

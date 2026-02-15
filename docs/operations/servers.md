@@ -4,6 +4,7 @@ REACH separates public traffic handling from admin control surfaces.
 
 ## Public server
 The public server serves dynamic routes and protocol handlers.
+
 - HTTP (ASGI)
 - FTP (TCP capture)
 - WSS (WebSocket)
@@ -29,3 +30,5 @@ reach server start --role both --port 8000
 ## Protocol selection
 The CLI can run multiple public protocol listeners via presets.
 See `config.md` for preset examples.
+
+For protocol internals, TLS notes, and edge proxy patterns, see `../core/protocols/protocols.md`.

@@ -28,8 +28,9 @@ reach forge payload new xss_basic \
 ```
 
 ## Useful options
+
 - `--header KEY=VALUE` set response headers (repeatable)
 - `--server-header-file <path>` pick `Server` header values from file
 - `--method`, `--status`, `--content-type` tune route response metadata
 
-See `../forge.md` for plugin-level behavior.
+See `../forge/forge.md` for plugin-level behavior.
