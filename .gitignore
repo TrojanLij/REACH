@@ -16,6 +16,41 @@ ui/reach-ui/node_modules/
 *.db
 __pycache__
 
+# Python artifacts and coverage
+*.pyo
+*.pyd
+*.so
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+.tox/
+.nox/
+.pytype/
+
+# Packaging/build artifacts
+dist/
+pip-wheel-metadata/
+*.egg-info/
+
+# Logs and temp runtime files
+*.log
+*.pid
+*.tmp
+
+# IDE and OS cruft
+.idea/
+.DS_Store
+Thumbs.db
+
+# Frontend build artifacts
+ui/reach-ui/dist/
+ui/reach-ui/.vite/
+
 # Specific files
 TODO.md
 .env
