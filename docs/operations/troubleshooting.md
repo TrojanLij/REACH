@@ -19,6 +19,7 @@ Auto-reload is intentionally disabled in current CLI behavior. Remove `--reload`
 
 ## No DNS responses
 Check one of these is true:
+
 - `--db-zones` is enabled and zones exist in DB
 - or `--domain` is set for static zone mode
 
@@ -29,18 +30,21 @@ reach dns serve ... --strict-zone
 
 ## Forge route creation fails
 Validate:
+
 - admin URL is reachable (`--core-url`)
 - payload kind exists (`reach forge --list`)
 - endpoint is provided unless `--dry-run` is used
 
 ## Docker server start fails
 Validate:
+
 - Docker daemon is running
 - image can build from selected `--dockerfile` and `--context`
 - required ports are available on host
 
 ## DB/state issues during local dev
 Dev utilities:
+
 ```bash
 reach dev clear-logs
 reach dev reset-db --yes

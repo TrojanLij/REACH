@@ -1,22 +1,40 @@
 # REACH overview
 
-REACH is a modular framework for hosting external payloads and capturing callbacks during authorized security testing. Its core is a dynamic routing and logging system backed by a database, with separate public and admin surfaces.
+This is the legacy high-level overview page.  
+For the full structured docs map, use [Home](index.md).
 
-Pillars:
-- Dynamic HTTP routing for external payloads
-- Centralized request logging for correlation and analysis
-- Protocol extensions (HTTP, FTP, WSS, DNS) that feed the same logging store
-- Admin API for managing routes, rules, logs, and DNS zones
+## User View
+
+REACH is a modular framework for hosting external payloads and capturing callbacks during authorized security testing.
+
+Core pillars:
+
+- Dynamic HTTP routing for external payload delivery/callback handling.
+- Centralized request logging for correlation and analysis.
+- Core protocol handlers (HTTP, FTP, WSS) feeding one shared log/data model.
+- Optional DNS add-on tool for OOB DNS workflows.
+- Admin API for managing routes, rules, logs, and DNS zones.
 
 Typical workflow:
-1) Start the core servers (public and admin).
-2) Create dynamic routes or payloads.
-3) Observe and correlate requests via logs.
-4) Run DNS for OOB callbacks using DB-backed zones.
 
-See the component docs for details:
-- `servers.md`
-- `dns.md`
-- `logs.md`
-- `forge.md`
-- `config.md`
+1. Start Core services (public/admin).
+2. Create dynamic routes or payload-backed routes.
+3. Observe and correlate inbound requests via logs.
+4. Optionally run DNS service for OOB callbacks using DB-backed zones.
+
+### Related docs
+
+- [Servers and Protocols](operations/servers.md)
+- [DNS Service](operations/dns.md)
+- [Logs](operations/logs.md)
+- [Forge Overview](forge/forge.md)
+- [Configuration](operations/config.md)
+
+## Dev
+
+Legacy overview mapped to current module areas:
+
+- Core runtime and APIs: `reach.core.*`
+- Protocol handlers: `reach.core.protocols.*`, `reach.dns.server`
+- CLI/operator layer: `reach.cli.*`
+- Forge payload workflows: `reach.forge.*`, `reach.cli.forge.*`

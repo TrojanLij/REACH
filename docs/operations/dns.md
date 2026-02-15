@@ -1,6 +1,7 @@
 # DNS service
 
-The DNS service is a separate process used for OOB callbacks and query logging. It integrates with the core database for live zone management.
+The DNS service is an optional separate REACH tool for OOB callbacks and query logging.  
+It is not required for Core runtime, but it integrates with the shared database for zone management and logging.
 
 ## Run
 ```bash
@@ -8,17 +9,20 @@ reach dns serve --host 0.0.0.0 --port 53 --db-zones
 ```
 
 ## Wildcard vs strict
+
 - Default: wildcard mode (any in-zone name answers A/AAAA)
 - `--strict-zone`: only the zone apex answers A/AAAA
 
 ## DB-backed zones (recommended)
 Zones are stored in the core database and managed via the admin API:
+
 - `GET /api/dns/zones`
 - `POST /api/dns/zones`
 - `PATCH /api/dns/zones/{id}`
 - `DELETE /api/dns/zones/{id}`
 
 The DNS service refreshes zones periodically:
+
 - `--zones-refresh 2.0` (seconds)
 
 ## Static zone (optional)
