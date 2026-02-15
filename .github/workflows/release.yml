@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       tag:
@@ -21,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.x"]
+        python-version: ["3.12", "3.13"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,7 +57,7 @@ jobs:
     needs: verify-e2e
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (full history for tags)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -97,6 +94,17 @@ jobs:
             echo "version=$version"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Checkout resolved tag ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.meta.outputs.tag }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Validate pyproject version matches tag
         shell: bash
         run: |
@@ -117,11 +125,6 @@ jobs:
           PY
         env:
           VERSION: ${{ steps.meta.outputs.version }}
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
 
       - name: Build release notes
         id: notes
