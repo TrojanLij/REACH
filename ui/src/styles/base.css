@@ -726,6 +726,229 @@ a {
   overflow: auto;
 }
 
+.rule-test-runner {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rule-test-runner label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.rule-test-runner input,
+.rule-test-runner textarea,
+.rule-test-runner select {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #12335c;
+  color: var(--text-main);
+  padding: 0.45rem 0.55rem;
+}
+
+.rule-test-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.rule-test-output {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: rgba(18, 51, 92, 0.55);
+  padding: 0.65rem;
+}
+
+.rule-trace-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rule-trace-item {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.86rem;
+}
+
+.rule-trace-item.ok {
+  border-color: #41b883;
+  background: rgba(65, 184, 131, 0.14);
+}
+
+.rule-trace-item.fail {
+  border-color: var(--accent-red);
+  background: rgba(224, 108, 117, 0.14);
+}
+
+.plugin-categories {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+  flex-wrap: wrap;
+}
+
+.plugin-categories button {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--bg-surface-2);
+  color: var(--text-main);
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+}
+
+.plugin-categories button.active {
+  border-color: var(--accent-red);
+  background: rgba(224, 108, 117, 0.15);
+}
+
+.plugin-panel {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(16, 39, 68, 0.55);
+  padding: 0.75rem;
+}
+
+.plugin-filter-list {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.plugin-filter-workspace {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
+}
+
+.plugin-filter-item {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(15, 42, 75, 0.9);
+  padding: 0.65rem;
+}
+
+.plugin-filter-item.active {
+  border-color: var(--accent-red);
+  box-shadow: 0 0 0 1px rgba(224, 108, 117, 0.2);
+}
+
+.plugin-filter-select {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  padding: 0;
+  cursor: pointer;
+}
+
+.plugin-filter-item h4 {
+  margin: 0 0 0.35rem;
+}
+
+.plugin-filter-item p {
+  margin: 0.2rem 0;
+  word-break: break-word;
+}
+
+.plugin-code-panel {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(15, 42, 75, 0.9);
+  padding: 0.65rem;
+}
+
+.plugin-code-editor {
+  width: 100%;
+  min-height: 460px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #0b1f37;
+  color: #d8e6ff;
+  padding: 0.65rem;
+  font-family: "Consolas", "SFMono-Regular", Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+@media (max-width: 1040px) {
+  .plugin-filter-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .plugin-code-editor {
+    min-height: 360px;
+  }
+}
+
+.plugin-test-panel {
+  margin-top: 0.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: rgba(15, 42, 75, 0.9);
+  padding: 0.7rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.plugin-test-panel label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.plugin-test-input,
+.plugin-test-expression {
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #0b1f37;
+  color: #d8e6ff;
+  padding: 0.55rem;
+  font-family: "Consolas", "SFMono-Regular", Menlo, monospace;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.plugin-test-input {
+  min-height: 180px;
+}
+
+.plugin-test-expression {
+  min-height: 90px;
+}
+
+.plugin-test-actions button {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--bg-surface-2);
+  color: var(--text-main);
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+}
+
+.plugin-test-actions button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.plugin-test-output pre {
+  margin: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #0b1f37;
+  color: #d8e6ff;
+  padding: 0.6rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .dns-form {
   display: grid;
   gap: 0.55rem;

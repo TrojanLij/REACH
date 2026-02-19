@@ -55,6 +55,42 @@ export function deleteRule(ruleId, apiBase) {
   return deleteJson(`/api/rules/${ruleId}`, { apiBase });
 }
 
+export function listRuleFilters(apiBase) {
+  return getJson("/api/rules/filters", { apiBase });
+}
+
+export function previewRule(rulePayload, requestPayload, apiBase) {
+  return postJson(
+    "/api/rules/preview",
+    {
+      rule: rulePayload,
+      request: requestPayload
+    },
+    { apiBase }
+  );
+}
+
+export function listIftttFilters(apiBase) {
+  return getJson("/api/plugins/ifttt/filters", { apiBase });
+}
+
+export function getIftttFilterSource(filterName, apiBase) {
+  return getJson(`/api/plugins/ifttt/filters/${encodeURIComponent(filterName)}/source`, {
+    apiBase
+  });
+}
+
+export function testIftttFilterExpression(expression, context, apiBase) {
+  return postJson(
+    "/api/plugins/ifttt/filters/test",
+    {
+      expression,
+      context
+    },
+    { apiBase }
+  );
+}
+
 export function listDnsZones(apiBase) {
   return getJson("/api/dns/zones", { apiBase });
 }

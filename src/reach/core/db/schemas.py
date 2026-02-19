@@ -86,6 +86,62 @@ class TriggerRuleOut(TriggerRuleBase):
     model_config = {"from_attributes": True}
 
 
+class RulePreviewRequest(BaseModel):
+    """Payload for simulating a trigger rule against request context."""
+
+    rule: TriggerRuleBase
+    request: dict[str, Any] = Field(default_factory=dict)
+
+
+class RulePreviewStep(BaseModel):
+    """One step in preview trace output."""
+
+    label: str
+    ok: bool
+    detail: str
+
+
+class RulePreviewResponse(BaseModel):
+    """Rule simulation result returned by preview endpoint."""
+
+    matched: bool
+    steps: list[RulePreviewStep] = Field(default_factory=list)
+    rendered_context: dict[str, Any] = Field(default_factory=dict)
+    rendered_action: dict[str, Any] | None = None
+
+
+class PluginFilterOut(BaseModel):
+    """Metadata for an IFTTT filter plugin."""
+
+    name: str
+    source: str
+    module: str
+    file: str | None = None
+
+
+class PluginFilterSourceOut(BaseModel):
+    """Source code payload for an IFTTT filter."""
+
+    name: str
+    source: str
+    file: str
+    code: str
+
+
+class PluginFilterTestRequest(BaseModel):
+    """Request payload for evaluating an IFTTT filter expression."""
+
+    context: dict[str, Any] = Field(default_factory=dict)
+    expression: str
+
+
+class PluginFilterTestResponse(BaseModel):
+    """Response payload for IFTTT filter expression evaluation."""
+
+    template: str
+    result: str
+
+
 class DnsZoneBase(BaseModel):
     zone: str
     a: str

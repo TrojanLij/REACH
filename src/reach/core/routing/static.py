@@ -12,6 +12,7 @@ from ..api.routes import router as routes_router
 from ..api.rules import router as rules_router
 from ..api.logs import router as logs_router
 from ..api.dns_zones import router as dns_zones_router
+from ..api.plugins import router as plugins_router
 
 
 class RouteDebugSummary(TypedDict):
@@ -65,3 +66,4 @@ def register_static_routing(app: FastAPI) -> None:
     app.include_router(rules_router)
     app.include_router(logs_router)
     app.include_router(dns_zones_router)
+    app.include_router(plugins_router)

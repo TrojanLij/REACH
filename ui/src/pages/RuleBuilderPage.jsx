@@ -8,7 +8,14 @@ import {
   useEdgesState,
   useNodesState
 } from "@xyflow/react";
-import { createRule, deleteRule, listRules, updateRule } from "../api/reachApi";
+import {
+  createRule,
+  deleteRule,
+  listRuleFilters,
+  listRules,
+  previewRule,
+  updateRule
+} from "../api/reachApi";
 import { useApiConfig } from "../state/ApiConfigContext";
 import {
   defaultRuleForm,
@@ -67,6 +74,19 @@ export function RuleBuilderPage() {
   const [jsonDraft, setJsonDraft] = useState("");
   const [jsonError, setJsonError] = useState("");
   const [form, setForm] = useState(defaultRuleForm);
+  const [testMethod, setTestMethod] = useState("GET");
+  const [testPath, setTestPath] = useState("/demo");
+  const [testHost, setTestHost] = useState("localhost");
+  const [testClientIp, setTestClientIp] = useState("127.0.0.1");
+  const [testBody, setTestBody] = useState("");
+  const [testHeadersJson, setTestHeadersJson] = useState("{}");
+  const [testQueryJson, setTestQueryJson] = useState("{}");
+  const [testRouteExists, setTestRouteExists] = useState(true);
+  const [testStateKey, setTestStateKey] = useState("");
+  const [testStateJson, setTestStateJson] = useState("{}");
+  const [testError, setTestError] = useState("");
+  const [testTrace, setTestTrace] = useState(null);
+  const [availableFilters, setAvailableFilters] = useState([]);
   const [nodes, setNodes, onNodesChange] = useNodesState(
     formToGraphNodes(defaultRuleForm(), BASE_NODES)
   );
@@ -89,6 +109,18 @@ export function RuleBuilderPage() {
   }, [apiBase]);
 
   useEffect(() => {
+    async function loadFilters() {
+      try {
+        const filters = await listRuleFilters(apiBase);
+        setAvailableFilters(Array.isArray(filters) ? filters : []);
+      } catch {
+        setAvailableFilters([]);
+      }
+    }
+    loadFilters();
+  }, [apiBase]);
+
+  useEffect(() => {
     const updatedNodes = formToGraphNodes(form, BASE_NODES).map((templateNode) => {
       const existing = nodes.find((n) => n.id === templateNode.id);
       if (!existing) {
@@ -107,6 +139,18 @@ export function RuleBuilderPage() {
   }, [form, setNodes, editorTab]);
 
   const preview = useMemo(() => graphToJson({ form }), [form]);
+
+  function parseJsonObject(raw, label) {
+    const value = String(raw || "").trim();
+    if (!value) {
+      return {};
+    }
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error(`${label} must be a JSON object.`);
+    }
+    return parsed;
+  }
 
   async function onSaveRule() {
     setSaving(true);
@@ -210,6 +254,45 @@ export function RuleBuilderPage() {
       setJsonDraft(JSON.stringify(parsed, null, 2));
     } catch (err) {
       setJsonError(err instanceof Error ? err.message : "Invalid JSON.");
+    }
+  }
+
+  async function onRunRuleTest() {
+    setTestError("");
+    try {
+      const payload =
+        editorTab === "json" ? JSON.parse(jsonDraft) : formToRulePayload(form, { strict: true }).payload;
+      const parsedHeaders = parseJsonObject(testHeadersJson, "Test headers");
+      const parsedQuery = parseJsonObject(testQueryJson, "Test query");
+      const parsedState = parseJsonObject(testStateJson, "Test state");
+      const normalizedPath = `/${String(testPath || "").replace(/^\/+/, "")}`;
+      const normalizedHeaders = Object.fromEntries(
+        Object.entries(parsedHeaders).map(([key, value]) => [String(key).toLowerCase(), String(value)])
+      );
+      const normalizedQuery = Object.fromEntries(
+        Object.entries(parsedQuery).map(([key, value]) => [String(key), String(value)])
+      );
+
+      const result = await previewRule(
+        payload,
+        {
+          method: testMethod,
+          path: normalizedPath,
+          host: testHost,
+          client_ip: testClientIp,
+          body: testBody,
+          headers: normalizedHeaders,
+          query: normalizedQuery,
+          route_exists: testRouteExists,
+          state_key: testStateKey,
+          state: parsedState
+        },
+        apiBase
+      );
+      setTestTrace(result);
+    } catch (err) {
+      setTestTrace(null);
+      setTestError(err instanceof Error ? err.message : "Failed to run rule test.");
     }
   }
 
@@ -505,6 +588,143 @@ export function RuleBuilderPage() {
           <section className="rule-preview">
             <h3>Generated Payload</h3>
             <pre>{JSON.stringify(preview.payload, null, 2)}</pre>
+          </section>
+
+          <section className="rule-preview rule-test-runner">
+            <h3>Rule Test Runner</h3>
+            <p>Preview this rule against a sample request and inspect each decision step.</p>
+            <p>
+              <strong>Loaded Filters:</strong>{" "}
+              {availableFilters.length > 0 ? availableFilters.join(", ") : "No filters loaded"}
+            </p>
+            <div className="rule-test-grid">
+              <label>
+                Method
+                <select value={testMethod} onChange={(event) => setTestMethod(event.target.value)}>
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="PATCH">PATCH</option>
+                  <option value="DELETE">DELETE</option>
+                </select>
+              </label>
+              <label>
+                Path
+                <input
+                  type="text"
+                  value={testPath}
+                  onChange={(event) => setTestPath(event.target.value)}
+                  placeholder="/demo"
+                />
+              </label>
+              <label>
+                Host
+                <input
+                  type="text"
+                  value={testHost}
+                  onChange={(event) => setTestHost(event.target.value)}
+                  placeholder="localhost"
+                />
+              </label>
+              <label>
+                Client IP
+                <input
+                  type="text"
+                  value={testClientIp}
+                  onChange={(event) => setTestClientIp(event.target.value)}
+                  placeholder="127.0.0.1"
+                />
+              </label>
+            </div>
+            <label>
+              Route Exists (post-stage rules require existing route unless action creates one)
+              <select
+                value={testRouteExists ? "true" : "false"}
+                onChange={(event) => setTestRouteExists(event.target.value === "true")}
+              >
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </label>
+            <label>
+              Body
+              <textarea
+                rows={4}
+                value={testBody}
+                onChange={(event) => setTestBody(event.target.value)}
+                placeholder="Request body"
+              />
+            </label>
+            <label>
+              Headers JSON
+              <textarea
+                rows={4}
+                value={testHeadersJson}
+                onChange={(event) => setTestHeadersJson(event.target.value)}
+                placeholder='{"content-type":"text/plain"}'
+              />
+            </label>
+            <label>
+              Query JSON
+              <textarea
+                rows={4}
+                value={testQueryJson}
+                onChange={(event) => setTestQueryJson(event.target.value)}
+                placeholder='{"token":"abc"}'
+              />
+            </label>
+            <label>
+              State Key (optional seed for template context)
+              <input
+                type="text"
+                value={testStateKey}
+                onChange={(event) => setTestStateKey(event.target.value)}
+                placeholder="token-123"
+              />
+            </label>
+            <label>
+              State JSON
+              <textarea
+                rows={4}
+                value={testStateJson}
+                onChange={(event) => setTestStateJson(event.target.value)}
+                placeholder='{"__hops":1}'
+              />
+            </label>
+            <div className="rule-actions">
+              <button type="button" onClick={onRunRuleTest}>
+                Run Rule Test
+              </button>
+            </div>
+            {testError && <p className="error">{testError}</p>}
+            {testTrace && (
+              <div className="rule-test-output">
+                <p>
+                  <strong>Matched:</strong> {String(testTrace.matched)}
+                </p>
+                <p>
+                  <strong>Trace:</strong>
+                </p>
+                <div className="rule-trace-list">
+                  {testTrace.steps.map((step, index) => (
+                    <div
+                      key={`${step.label}-${index}`}
+                      className={`rule-trace-item${step.ok ? " ok" : " fail"}`}
+                    >
+                      <strong>{step.ok ? "PASS" : "FAIL"}</strong> {step.label} - {step.detail}
+                    </div>
+                  ))}
+                </div>
+                <p>
+                  <strong>Rendered Context:</strong>
+                </p>
+                <pre>{JSON.stringify(testTrace.rendered_context || {}, null, 2)}</pre>
+                <p>
+                  <strong>Rendered Action:</strong>
+                </p>
+                <pre>{JSON.stringify(testTrace.rendered_action || {}, null, 2)}</pre>
+              </div>
+            )}
           </section>
         </div>
       </div>
