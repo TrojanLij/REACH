@@ -27,3 +27,4 @@ def get_runtime_version() -> str:
             data = tomllib.load(f)
 
         return str(data.get("project", {}).get("version", "0.0.0+dev"))
+    
