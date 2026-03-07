@@ -25,14 +25,14 @@ reach server start --role both --port 8000
 
 With `--role both`, public traffic is served on `8000` and admin API defaults to `8001`.
 
-### Create a test payload route
+### Create a test generator route
 
 In a second terminal:
 
 ```bash
-reach forge payload new xss_basic \
+reach forge generator new xss_basic \
   --endpoint /xss \
-  --payload-kwarg callback_url=http://127.0.0.1:8000/beacon \
+  --generator-kwarg callback_url=http://127.0.0.1:8000/beacon \
   --core-url http://127.0.0.1:8001
 ```
 
@@ -60,7 +60,7 @@ reach dns serve --host 0.0.0.0 --port 53 --db-zones
 
 ### What just happened
 
-- Forge generated payload content and registered a dynamic route through Core admin API.
+- Forge generated output and registered a dynamic route through Core admin API.
 - Public listener served the route response on `:8000`.
 - Log stream read request events from admin API on `:8001`.
 
@@ -77,5 +77,5 @@ Relevant modules for this workflow:
 
 - Core app/runtime: `reach.core.server`, `reach.core.protocols.http.server`
 - Route handling/logging: `reach.core.routing.dynamic`, `reach.core.logging`
-- Forge CLI and integration: `reach.cli.forge.payload`, `reach.core.client`
+- Forge CLI and integration: `reach.cli.forge.generator`, `reach.core.client`
 - Logs CLI: `reach.cli.logs.tail`

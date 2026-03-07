@@ -2,7 +2,7 @@
 [ CLI ]
 REACH FORGE
 
-CLI entrypoint for generating payloads and creating routes via Forge.
+CLI entrypoint for generators/exploits and route creation via Forge.
 """
 from __future__ import annotations
 
@@ -10,27 +10,49 @@ import typer
 
 from ..importer import auto_discover
 
-app = typer.Typer(help="Generate payloads and create routes via Forge")
+app = typer.Typer(help="Generate outputs and create routes via Forge")
 
 
 @app.callback(invoke_without_command=True)
 def forge_callback(
     ctx: typer.Context,
-    list_payloads: bool = typer.Option(
+    list_all: bool = typer.Option(
         False,
         "--list",
-        help="List payload kinds (optionally with --kind for details).",
+        help="List forge kinds across generators/exploits/payload-aliases.",
     ),
     kind: str | None = typer.Option(
         None,
         "--kind",
-        help="Payload kind to describe (use with --list).",
+        "--generator-kind",
+        "--exploit-kind",
+        help="Kind to describe (works with --list, --list-generators, or --list-exploits).",
+    ),
+    list_generators: bool = typer.Option(
+        False,
+        "--list-generators",
+        help="List generator kinds only (optionally with --kind for details).",
+    ),
+    list_exploits: bool = typer.Option(
+        False,
+        "--list-exploits",
+        help="List exploit kinds (optionally with --exploit-kind for details).",
     ),
 ) -> None:
-    if list_payloads:
-        from .help import forge_list_payloads
+    if list_all:
+        from .help import forge_list_catalog
 
-        forge_list_payloads(kind=kind)
+        forge_list_catalog(kind=kind)
+        raise typer.Exit()
+    if list_generators:
+        from .help import forge_list_generators
+
+        forge_list_generators(kind=kind)
+        raise typer.Exit()
+    if list_exploits:
+        from .help import forge_list_exploits
+
+        forge_list_exploits(kind=kind)
         raise typer.Exit()
 
     if ctx.invoked_subcommand is None:

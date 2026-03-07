@@ -1,13 +1,13 @@
 # Forge Overview
 
-Forge is REACH's payload-generation component.
+Forge is REACH's generator and exploit component.
 
 ## User View
 
-Forge can run independently as a payload generator, but it is most useful when connected to Core.
+Forge can run independently as a generator module, but it is most useful when connected to Core.
 
-- Independent mode: generate payloads only.
-- Integrated mode: generate payloads and register callback routes via Core admin API.
+- Independent mode: generate output only.
+- Integrated mode: generate output and register callback routes via Core admin API.
 
 Minimum requirement for operational use:
 
@@ -17,18 +17,18 @@ Quick examples:
 
 ```bash
 reach forge --list
-reach forge payload new xss_basic --dry-run --payload-kwarg callback_url=http://127.0.0.1:8000/beacon
-reach forge payload new xss_basic --endpoint /xss --core-url http://127.0.0.1:8001 --payload-kwarg callback_url=http://127.0.0.1:8000/beacon
+reach forge generator new xss_basic --dry-run --generator-kwarg callback_url=http://127.0.0.1:8000/beacon
+reach forge generator new xss_basic --endpoint /xss --core-url http://127.0.0.1:8001 --generator-kwarg callback_url=http://127.0.0.1:8000/beacon
 ```
 
 See subpages:
 
-- [Payload Workflows](payloads.md)
+- [Generators](generators.md)
 - [Plugins and Subpages](plugins.md)
 - [Trigger Rules (IFTTT)](ifttt_rules.md)
 
 ## Dev
 
 - CLI entry: `reach.cli.forge`
-- Payload command: `reach.cli.forge.payload`
+- Generator command: `reach.cli.forge.generator`
 - Core integration client: `reach.core.client`

@@ -50,9 +50,9 @@ reach server start --role both --port 8000
 Create a route with Forge:
 
 ```bash
-reach forge payload new xss_basic \
+reach forge generator new xss_basic \
   --endpoint /beacon \
-  --payload-kwarg callback_url=http://127.0.0.1:8000/ping \
+  --generator-kwarg callback_url=http://127.0.0.1:8000/ping \
   --core-url http://127.0.0.1:8001
 ```
 

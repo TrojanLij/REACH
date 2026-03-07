@@ -38,7 +38,7 @@ Use only with explicit authorization and approved scope.
 Core, Forge, and CLI are modular and can run independently.
 
 - Core: runtime/control plane and minimum required backend.
-- Forge: payload generation (can run standalone, best when connected to Core).
+- Forge: generator/exploit workflows (can run standalone, best when connected to Core).
 - CLI: operator interface (many commands require reachable Core APIs).
 - DNS tool: optional standalone OOB DNS service integrated with Core DB/logging.
 
@@ -71,8 +71,8 @@ Forge/CLI/operator actions
 
 ## FORGE
 
-- [Forge Overview](forge/forge.md) - payload generation and Core integration
-- [Payload Workflows](forge/payloads.md) - practical payload creation patterns
+- [Forge Overview](forge/forge.md) - generator/exploit workflows and Core integration
+- [Generator Workflows](forge/generators.md) - practical generator creation patterns
 - [Plugins and Subpages](forge/plugins.md) - extend Forge with custom modules
 - [Trigger Rules (IFTTT)](forge/ifttt_rules.md) - if-this-then-that automation logic
 
@@ -82,7 +82,7 @@ Forge/CLI/operator actions
 - [Server CLI](cli/server.md) - start/manage server roles and protocols
 - [Routes CLI](cli/routes.md) - inspect static and dynamic routes
 - [Logs CLI](cli/logs.md) - stream and filter request logs
-- [Forge CLI](cli/forge.md) - payload generation and route registration
+- [Forge CLI](cli/forge.md) - generator output and route registration
 - [DNS CLI](cli/dns.md) - run and configure DNS service
 - [Dev CLI](cli/dev.md) - developer maintenance utilities
 

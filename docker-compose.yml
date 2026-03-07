@@ -1,0 +1,43 @@
+services:
+  reach-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: reach:local
+    container_name: reach-core
+    restart: unless-stopped
+    command:
+      - reach
+      - server
+      - start
+      - --role
+      - both
+      - --host
+      - 0.0.0.0
+      - --port-public
+      - "8000"
+      - --port-admin
+      - "8001"
+    environment:
+      REACH_DB_FILE: /data/reach_core.db
+      REACH_DB_ECHO: "0"
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - reach_data:/data
+      - ./plugins:/app/plugins:ro
+      - ./presets:/app/presets:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/api/health', timeout=3)
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  reach_data:

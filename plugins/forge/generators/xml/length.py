@@ -1,23 +1,32 @@
-"""A for fun payload to test the forge payload generator."""
+"""A for-fun payload to test the forge generator interaction."""
 
 from __future__ import annotations
-__all__ = ["generate"]
+
+__all__ = ["PLUGIN", "generate"]
+
+PLUGIN = {
+    "api_version": "1",
+    "type": "generator",
+    "kind": "xml_length",
+    "entrypoint": "generate",
+    "summary": "Emit an 'x' string of requested length.",
+    "requires_python": [],
+    "requires_system": [],
+}
+
 
 def generate(length: int = 10) -> str:
     """
-    Simple python script for testing forge console interaction.
+    Simple python function for testing forge console interaction.
 
-    Author: @Trojan
-    
     Params:
-    - length: How many characters??
-    
+    - length: Number of characters to return.
+
     Returns:
     - Rendered payload string.
-    
     """
     ret = ""
-    for i in range(int(length)):
+    for _ in range(int(length)):
         ret = f"{ret}x"
 
     return ret

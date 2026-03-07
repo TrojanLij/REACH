@@ -1,0 +1,14 @@
+.git
+.github
+.pytest_cache
+.venv_ubuntu
+.vscode
+site
+tests
+docs
+ui
+random
+TODO.md
+mkdocs.yml
+*.pyc
+__pycache__/

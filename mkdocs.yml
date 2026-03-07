@@ -46,7 +46,8 @@ nav:
       - Dev: cli/dev.md
   - FORGE:
       - Forge Overview: forge/forge.md
-      - Payload Workflows: forge/payloads.md
+      - Generators: forge/generators.md
+      - Exploits: forge/exploits.md
       - Plugins and Subpages: forge/plugins.md
       - Trigger Rules (IFTTT): forge/ifttt_rules.md
   - OPERATIONS (TO-FIX):
