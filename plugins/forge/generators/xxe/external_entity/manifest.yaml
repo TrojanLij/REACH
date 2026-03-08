@@ -1,0 +1,19 @@
+id: xxe.external_entity
+type: generator
+name: External Entity XXE
+version: 0.1.0
+forge_api_version: "1"
+category: xxe
+kind: xxe_external_entity
+entry: src/entry.py
+entrypoint: generate
+summary: Minimal external entity XXE payload.
+description: Generate a minimal external entity XXE payload.
+requirements_file: requirements.txt
+system_requirements_file: system-requirements.txt
+requires_python: []
+requires_system: []
+required_env: []
+optional_env: []
+asset_dirs:
+  - assets

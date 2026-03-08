@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import hashlib
 import os
 import pkgutil
 from pathlib import Path
 from typing import Any, Callable
+
+from ..manifests import discover_manifests
 
 PLUGIN_API_VERSION = "1"
 
@@ -113,6 +116,56 @@ def _load_external_plugins() -> None:
       - $HOME/.reach/plugins/forge/generators/<family>/<name>.py
       - any path in REACH_FORGE_PLUGIN_PATHS (os.pathsep-separated)
     """
+    manifest_packages = discover_manifests(
+        item_type="generator",
+        legacy_env_var="REACH_FORGE_PLUGIN_PATHS",
+    )
+    for manifest in manifest_packages:
+        if manifest.api_version != PLUGIN_API_VERSION:
+            continue
+        entry_file = manifest.entry_file
+        if not entry_file.exists() or not entry_file.is_file():
+            continue
+        try:
+            unique = hashlib.sha1(str(entry_file).encode("utf-8")).hexdigest()[:10]
+            module_name = f"reach.forge.generator_manifest.{manifest.kind}.{unique}"
+            spec = importlib.util.spec_from_file_location(module_name, entry_file)
+            if not spec or not spec.loader:
+                continue
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)  # type: ignore[attr-defined]
+            fn = getattr(module, manifest.entrypoint, None)
+            if not callable(fn):
+                continue
+            REGISTRY[manifest.kind] = fn
+            PLUGIN_REGISTRY[manifest.kind] = {
+                "api_version": PLUGIN_API_VERSION,
+                "type": "generator",
+                "name": manifest.name,
+                "version": manifest.version,
+                "description": manifest.description,
+                "kind": manifest.kind,
+                "category": manifest.category,
+                "entrypoint": manifest.entrypoint,
+                "summary": manifest.summary,
+                "author": manifest.author,
+                "license": manifest.license,
+                "tags": manifest.tags,
+                "requires_python": manifest.requires_python,
+                "requires_system": manifest.requires_system,
+                "requirements_file": manifest.requirements_file,
+                "system_requirements_file": manifest.system_requirements_file,
+                "required_env": manifest.required_env,
+                "optional_env": manifest.optional_env,
+                "asset_dirs": manifest.asset_dirs,
+                "min_core_version": manifest.min_core_version,
+                "max_core_version": manifest.max_core_version,
+                "id": manifest.item_id,
+                "manifest": str(manifest.path),
+            }
+        except Exception:
+            continue
+
     roots: list[Path] = []
     env_paths = os.getenv("REACH_FORGE_PLUGIN_PATHS")
     if env_paths:

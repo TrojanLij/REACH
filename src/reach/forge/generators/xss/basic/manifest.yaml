@@ -1,0 +1,19 @@
+id: xss.basic
+type: generator
+name: Basic XSS
+version: 0.1.0
+forge_api_version: "1"
+category: xss
+kind: xss_basic
+entry: src/entry.py
+entrypoint: generate
+summary: Basic reflected XSS payload.
+description: Generate a simple reflected XSS payload with optional callback beaconing.
+requirements_file: requirements.txt
+system_requirements_file: system-requirements.txt
+requires_python: []
+requires_system: []
+required_env: []
+optional_env: []
+asset_dirs:
+  - assets
