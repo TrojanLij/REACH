@@ -110,38 +110,6 @@ class RulePreviewResponse(BaseModel):
     rendered_action: dict[str, Any] | None = None
 
 
-class PluginFilterOut(BaseModel):
-    """Metadata for an IFTTT filter plugin."""
-
-    name: str
-    source: str
-    module: str
-    file: str | None = None
-
-
-class PluginFilterSourceOut(BaseModel):
-    """Source code payload for an IFTTT filter."""
-
-    name: str
-    source: str
-    file: str
-    code: str
-
-
-class PluginFilterTestRequest(BaseModel):
-    """Request payload for evaluating an IFTTT filter expression."""
-
-    context: dict[str, Any] = Field(default_factory=dict)
-    expression: str
-
-
-class PluginFilterTestResponse(BaseModel):
-    """Response payload for IFTTT filter expression evaluation."""
-
-    template: str
-    result: str
-
-
 class DnsZoneBase(BaseModel):
     zone: str
     a: str
