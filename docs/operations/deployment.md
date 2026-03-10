@@ -46,7 +46,6 @@ docker compose down
 
 Notes:
 
-- UI is intentionally out of scope for this stack.
 - DNS is also out of scope here; run it separately only if needed.
 - DB state is persisted in the Docker volume `reach_data`.
 - `./plugins` is mounted read-only so local plugin edits are available immediately.

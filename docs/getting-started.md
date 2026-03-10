@@ -9,11 +9,36 @@ This guide gets you from clone to first callback capture quickly.
 - Python 3.12+
 - Local terminal with network access to your chosen ports
 
-### Install
+### Download the project
+
+Clone the repository:
+
+```bash
+git clone https://github.com/TrojanLij/REACH
+cd REACH
+```
+
+### Install REACH
 
 ```bash
 python -m pip install -e .
 ```
+
+If you also want to work on the docs locally:
+
+```bash
+python -m pip install -e ".[docs]"
+```
+
+### Build and preview the docs
+
+Run the local docs server:
+
+```bash
+mkdocs serve
+```
+
+Then open `http://127.0.0.1:8000`.
 
 ### Start Core services
 
@@ -69,6 +94,7 @@ reach dns serve --host 0.0.0.0 --port 53 --db-zones
 - [Architecture Overview](core/architecture.md)
 - [Core Runtime](core/core-runtime.md)
 - [CLI Overview](cli/index.md)
+- [Forge Overview](forge/forge.md)
 - [Deployment](operations/deployment.md)
 
 ## Dev

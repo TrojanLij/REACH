@@ -33,6 +33,30 @@ REACH helps red teams run callback infrastructure in a structured way:
 
 Use only with explicit authorization and approved scope.
 
+### Install and docs setup
+
+Clone the project:
+
+```bash
+git clone https://github.com/TrojanLij/REACH
+cd REACH
+```
+
+Install REACH:
+
+```bash
+python -m pip install -e .
+```
+
+Install docs dependencies and preview locally:
+
+```bash
+python -m pip install -e ".[docs]"
+mkdocs serve
+```
+
+Then open `http://127.0.0.1:8000`.
+
 ### Component model
 
 Core, Forge, and CLI are modular and can run independently.
