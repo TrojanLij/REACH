@@ -42,13 +42,27 @@ def _render_kind_details(kind: str, fn: object, type_label: str) -> None:
     table.add_column("Default", style="magenta")
     table.add_column("Description", style="white")
 
-    for name, param in sig.parameters.items():
-        default = "required" if param.default is inspect._empty else repr(param.default)
-        annot = ""
-        if param.annotation is not inspect._empty:
-            annot = getattr(param.annotation, "__name__", str(param.annotation))
-        desc = param_desc.get(name, "")
-        table.add_row(name, annot, default, desc)
+    only_kwargs = (
+        len(sig.parameters) == 1
+        and next(iter(sig.parameters.values())).kind == inspect.Parameter.VAR_KEYWORD
+    )
+    if only_kwargs and param_desc:
+        for param_name, desc in param_desc.items():
+            lowered = desc.lower()
+            default = "optional"
+            if "required" in lowered:
+                default = "required"
+            elif "optional" in lowered:
+                default = "optional"
+            table.add_row(param_name, "kwarg", default, desc)
+    else:
+        for name, param in sig.parameters.items():
+            default = "required" if param.default is inspect._empty else repr(param.default)
+            annot = ""
+            if param.annotation is not inspect._empty:
+                annot = getattr(param.annotation, "__name__", str(param.annotation))
+            desc = param_desc.get(name, "")
+            table.add_row(name, annot, default, desc)
 
     console.print(table)
 

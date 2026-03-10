@@ -59,4 +59,26 @@ reach forge generator check --all
 reach forge generator install --all --upgrade
 ```
 
+## Plugin package lifecycle
+
+Scaffold a new minimal package:
+
+```bash
+reach forge scaffold generator demo_payload --id demo.payload --category demo
+```
+
+Validate packages:
+
+```bash
+reach forge validate --root plugins/forge
+reach forge validate --root src/reach/forge
+```
+
+Reorganize package folders:
+
+```bash
+reach forge cleanup --source-root forge --destination-root plugins/forge --dry-run
+reach forge cleanup --source-root forge --destination-root plugins/forge --apply
+```
+
 See `../forge/forge.md` for plugin-level behavior.

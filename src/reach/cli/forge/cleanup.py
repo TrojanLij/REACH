@@ -8,7 +8,12 @@ from rich.console import Console
 from rich.table import Table
 
 from . import app
-from reach.forge.manifests import TYPE_DIRS, discover_manifest_files, load_manifest
+from reach.forge.manifests import (
+    TYPE_DIRS,
+    discover_manifest_files,
+    load_manifest,
+    validate_manifest_package,
+)
 
 
 def _infer_category(kind: str) -> str:
@@ -23,7 +28,7 @@ def _infer_category(kind: str) -> str:
 @app.command("cleanup")
 def cleanup_forge_items(
     source_root: Path = typer.Option(
-        Path("forge"),
+        Path("plugins/forge"),
         "--source-root",
         help="Folder containing plug-and-play forge item folders.",
     ),
@@ -42,6 +47,16 @@ def cleanup_forge_items(
         "--force",
         help="Overwrite existing destination folders by deleting them first.",
     ),
+    check_internal: bool = typer.Option(
+        True,
+        "--check-internal/--no-check-internal",
+        help="Validate internal built-in forge packages under src/reach/forge.",
+    ),
+    internal_root: Path = typer.Option(
+        Path("src/reach/forge"),
+        "--internal-root",
+        help="Internal built-in forge package root to validate when --check-internal is enabled.",
+    ),
 ) -> None:
     """Rebuild plug-and-play forge items into canonical type/category folders."""
     console = Console()
@@ -55,7 +70,6 @@ def cleanup_forge_items(
     manifest_files = discover_manifest_files(source_root)
     if not manifest_files:
         console.print(f"[yellow]No manifest files found under {source_root}[/yellow]")
-        return
 
     table = Table(title="Forge Cleanup Plan")
     table.add_column("Item", style="cyan")
@@ -138,11 +152,56 @@ def cleanup_forge_items(
             action,
         )
 
-    console.print(table)
+    if manifest_files:
+        console.print(table)
     console.print(
         f"[bold]Summary:[/bold] moved={moved} skipped={skipped} invalid={errors} "
         f"mode={'apply' if apply_changes else 'dry-run'}"
     )
 
+    internal_invalid = 0
+    if check_internal:
+        internal_path = internal_root.resolve()
+        internal_files = discover_manifest_files(internal_path) if internal_path.is_dir() else []
+        internal_table = Table(title="Internal Forge Validation")
+        internal_table.add_column("Item", style="cyan")
+        internal_table.add_column("Manifest", style="white")
+        internal_table.add_column("Status", style="magenta")
+        internal_table.add_column("Detail", style="white")
+
+        for manifest_file in internal_files:
+            try:
+                manifest = load_manifest(manifest_file)
+            except Exception as exc:
+                internal_invalid += 1
+                internal_table.add_row(manifest_file.parent.name, str(manifest_file), "invalid", str(exc))
+                continue
+
+            validation_errors = validate_manifest_package(manifest, check_entrypoint_import=False)
+            if validation_errors:
+                internal_invalid += 1
+                internal_table.add_row(
+                    manifest.package_dir.name,
+                    str(manifest.path),
+                    "invalid",
+                    "; ".join(validation_errors),
+                )
+            else:
+                internal_table.add_row(
+                    manifest.package_dir.name,
+                    str(manifest.path),
+                    "ok",
+                    f"kind={manifest.kind}",
+                )
+
+        if not internal_files:
+            console.print(f"[yellow]No internal manifest files found under {internal_path}[/yellow]")
+        else:
+            console.print(internal_table)
+            console.print(
+                f"[bold]Internal Summary:[/bold] checked={len(internal_files)} invalid={internal_invalid}"
+            )
+
+    errors += internal_invalid
     if errors > 0:
         raise typer.Exit(code=1)
