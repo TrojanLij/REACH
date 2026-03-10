@@ -1,0 +1,19 @@
+id: xss.zero_width
+type: generator
+name: Zero Width XSS
+version: 0.1.0
+forge_api_version: "1"
+category: xss
+kind: xss_zero_width
+entry: src/entry.py
+entrypoint: generate
+summary: Wrap a user-supplied payload in a zero-width JavaScript eval decoder.
+description: Generate a JavaScript eval payload that reconstructs hidden source from zero-width characters.
+requirements_file: requirements.txt
+system_requirements_file: system-requirements.txt
+requires_python: []
+requires_system: []
+required_env: []
+optional_env: []
+asset_dirs:
+  - assets

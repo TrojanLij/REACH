@@ -42,7 +42,7 @@ inbound protocol traffic
   admin API (/api/logs)
           |
           v
-   CLI / scripts / UI
+   CLI / scripts
 ```
 
 ### Common usage examples

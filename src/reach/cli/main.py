@@ -34,6 +34,7 @@ def main() -> None:
         
         Request Engine for Attacks, Callbacks & Handling
         --@TrojanLij
+        --@th3_ch1ld
     """)
     app()
 

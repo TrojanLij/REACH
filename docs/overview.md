@@ -37,4 +37,4 @@ Legacy overview mapped to current module areas:
 - Core runtime and APIs: `reach.core.*`
 - Protocol handlers: `reach.core.protocols.*`, `reach.dns.server`
 - CLI/operator layer: `reach.cli.*`
-- Forge payload workflows: `reach.forge.*`, `reach.cli.forge.*`
+- Forge generator/exploit workflows: `reach.forge.*`, `reach.cli.forge.*`
