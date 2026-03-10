@@ -29,7 +29,11 @@ def generate(
         type: str = "eval"
     ) -> str:
     """
-    Hide a user-supplied payload inside a zero-width JavaScript eval wrapper.
+    Hiding JavaScript source code in plain sight using zero-width characters.
+
+    Author: TrojanLij
+    Original POC: oscarmine (https://github.com/oscarmine/InvisibleJS)
+
 
     Params:
     - payload: JavaScript or HTML/JS markup to encode.

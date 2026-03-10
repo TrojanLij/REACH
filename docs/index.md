@@ -72,7 +72,8 @@ Forge/CLI/operator actions
 ## FORGE
 
 - [Forge Overview](forge/forge.md) - generator/exploit workflows and Core integration
-- [Generator Workflows](forge/generators.md) - practical generator creation patterns
+- [Generators](forge/generators.md) - create payload content and optionally register routes
+- [Exploits](forge/exploits.md) - run workflows or harness external tooling
 - [Plugins and Subpages](forge/plugins.md) - extend Forge with custom modules
 - [Trigger Rules (IFTTT)](forge/ifttt_rules.md) - if-this-then-that automation logic
 

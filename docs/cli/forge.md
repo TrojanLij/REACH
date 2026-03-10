@@ -81,4 +81,9 @@ reach forge cleanup --source-root forge --destination-root plugins/forge --dry-r
 reach forge cleanup --source-root forge --destination-root plugins/forge --apply
 ```
 
-See `../forge/forge.md` for plugin-level behavior.
+See related Forge docs:
+
+- [Forge Overview](../forge/forge.md)
+- [Generators](../forge/generators.md)
+- [Exploits](../forge/exploits.md)
+- [Plugins and Subpages](../forge/plugins.md)
