@@ -24,6 +24,7 @@ from ..routing.dynamic import (
     _render_template,
     _rule_matches,
     _rule_status_code,
+    _validate_forward_url_template,
 )
 from ..routing.filters import FILTERS
 
@@ -41,7 +42,17 @@ def _apply_rule_updates(db_rule: models.TriggerRule, rule_upd: TriggerRuleUpdate
     if rule_upd.match is not None:
         db_rule.set_match(rule_upd.match)
     if rule_upd.action is not None:
+        _validate_trigger_rule_action(rule_upd.action)
         db_rule.set_action(rule_upd.action)
+
+
+def _validate_trigger_rule_action(action: dict[str, Any]) -> None:
+    forward = action.get("forward")
+    if not isinstance(forward, dict):
+        return
+    reason = _validate_forward_url_template(forward.get("url"))
+    if reason is not None:
+        raise HTTPException(status_code=400, detail=reason)
 
 
 @router.get("", response_model=list[TriggerRuleOut])
@@ -236,6 +247,7 @@ def preview_rule(payload: RulePreviewRequest) -> RulePreviewResponse:
 @router.post("", response_model=TriggerRuleOut, status_code=201)
 def create_rule(rule_in: TriggerRuleCreate, db: Session = Depends(get_db)) -> TriggerRuleOut:
     """Create a new trigger rule."""
+    _validate_trigger_rule_action(rule_in.action)
     db_rule = models.TriggerRule(
         name=rule_in.name,
         enabled=rule_in.enabled,
