@@ -5,6 +5,7 @@ from __future__ import annotations
 from base64 import b64decode
 from datetime import datetime, timezone, timedelta
 import ipaddress
+import os
 import re
 import socket
 from typing import Any, Callable
@@ -25,6 +26,7 @@ from .. import logging as reach_logging
 DYNAMIC_HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"]
 # Paths that should bypass the public dynamic router (admin/docs/static)
 DEFAULT_BODY_ENCODING = "none"
+_FORWARD_ENABLED_TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
 def register_dynamic_routing(app: FastAPI) -> None:
@@ -130,7 +132,8 @@ def register_dynamic_routing(app: FastAPI) -> None:
 
         if rule_match is not None:
             _apply_rule_state(db, rule_action, rule_ctx)
-            await _maybe_forward_action(rule_action, rule_ctx)
+            if _public_forwarding_enabled():
+                await _maybe_forward_action(rule_action, rule_ctx)
             return _build_rule_response(rule_action, rule_ctx)
 
         # No matching route → clean 404
@@ -313,7 +316,6 @@ def _build_rule_response(action: dict[str, Any], ctx: dict[str, Any]) -> Respons
     )
 
 
-_TEMPLATE_RE = re.compile(r"{{\s*(.+?)\s*}}")
 _FORWARD_ALLOWED_SCHEMES = {"http", "https"}
 _FORWARD_BLOCKED_HOSTS = {"localhost", "localhost.localdomain"}
 
@@ -322,18 +324,39 @@ def _render_template(value: Any, ctx: dict[str, Any]) -> str:
     if value is None:
         return ""
     text = str(value)
+    if "{{" not in text:
+        return text
 
-    def replace(match: re.Match[str]) -> str:
-        expr = match.group(1)
+    rendered: list[str] = []
+    cursor = 0
+    while True:
+        start = text.find("{{", cursor)
+        if start == -1:
+            rendered.append(text[cursor:])
+            break
+        rendered.append(text[cursor:start])
+        end = text.find("}}", start + 2)
+        if end == -1:
+            rendered.append(text[start:])
+            break
+        expr = text[start + 2 : end].strip()
         parts = [p.strip() for p in expr.split("|") if p.strip()]
         if not parts:
-            return ""
-        current = _resolve_path(parts[0], ctx)
-        for flt in parts[1:]:
-            current = _apply_filter(current, flt)
-        return str(current)
+            replacement = ""
+        else:
+            current = _resolve_path(parts[0], ctx)
+            for flt in parts[1:]:
+                current = _apply_filter(current, flt)
+            replacement = str(current)
+        rendered.append(replacement)
+        cursor = end + 2
 
-    return _TEMPLATE_RE.sub(replace, text)
+    return "".join(rendered)
+
+
+def _public_forwarding_enabled() -> bool:
+    value = os.getenv("REACH_PUBLIC_FORWARD_ENABLED", "").strip().lower()
+    return value in _FORWARD_ENABLED_TRUE_VALUES
 
 
 def _validate_forward_url_template(url_template: Any) -> str | None:
@@ -347,7 +370,7 @@ def _validate_forward_url_template(url_template: Any) -> str | None:
         return "Forward URL must be absolute."
     if parsed.username or parsed.password:
         return "Forward URL must not include user info."
-    if _TEMPLATE_RE.search(parsed.netloc):
+    if "{{" in parsed.netloc:
         return "Forward URL host must be static; templates are only allowed in the path, query, or fragment."
     return None
 
