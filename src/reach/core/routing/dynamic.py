@@ -149,7 +149,7 @@ def register_dynamic_routing(app: FastAPI) -> None:
             except Exception as e:
                 return JSONResponse(
                     status_code=500,
-                    content={"detail": f"Failed to decode base64 body: {e}"},
+                    content={"detail": f"Failed to decode base64 body."},
                 )
             # base64 / images
             return Response(
