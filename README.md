@@ -68,7 +68,4 @@ You will be required to set up and point a domain at the server.
 REACH is intended for **authorized** security testing only. It should be deployed temporarily and with appropriate access controls for the engagement scope.
 
 
-# TODO:
-documentation. need to fix it:
-  - dns server,
-  - forge (exploits, generators)
+(yes, I used AI to generate the documentation and fix my code.... I'm lazy)
