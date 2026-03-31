@@ -1,14 +1,14 @@
-id: xss.gh0st
+id: xss.gh0s7
 type: generator
-name: Gh0st XSS
+name: gh0s7 XSS
 version: 0.1.0
 forge_api_version: "1"
 category: xss
-kind: xss_gh0st
+kind: xss_gh0s7
 entry: src/entry.py
 entrypoint: generate
-summary: Gh0st XSS payload to execute commands.
-description: Generate the Gh0st XSS payload with optional command execution and tag wrapping.
+summary: gh0s7 XSS payload to execute commands.
+description: Generate the gh0s7 XSS payload with optional command execution and tag wrapping.
 requirements_file: requirements.txt
 system_requirements_file: system-requirements.txt
 requires_python: []

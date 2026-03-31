@@ -608,5 +608,5 @@ def _apply_rule_state(db: Session, action: dict[str, Any], ctx: dict[str, Any]) 
 
     row.set_payload(payload)
     row.expires_at = expires_at
-    row.updated_at = datetime.utcnow()
+    row.updated_at = datetime.now(timezone.utc)
     db.commit()

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -277,7 +277,7 @@ def update_rule(rule_id: int, rule_upd: TriggerRuleUpdate, db: Session = Depends
     if not db_rule:
         raise HTTPException(status_code=404, detail="Rule not found")
     _apply_rule_updates(db_rule, rule_upd)
-    db_rule.updated_at = datetime.utcnow()
+    db_rule.updated_at = datetime.now(UTC)
     db.add(db_rule)
     db.commit()
     db.refresh(db_rule)

@@ -10,6 +10,7 @@
   
   Request Engine for Attacks, Callbacks & Handling
   --@TrojanLij
+  --@th3_ch1ld
 ```
 
 REACH is a modular web exploitation framework for authorized security testing. It provides a dynamic routing core for hosting external payloads and capturing callbacks, with structured request logging and extensible protocol support.
@@ -66,6 +67,3 @@ You will be required to set up and point a domain at the server.
 
 ## Disclaimer
 REACH is intended for **authorized** security testing only. It should be deployed temporarily and with appropriate access controls for the engagement scope.
-
-
-(yes, I used AI to generate the documentation and fix my code.... I'm lazy)

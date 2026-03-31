@@ -23,6 +23,7 @@ engine = create_engine(
     db_url,
     future=True,
     echo=settings.echo,
+    connect_args={"check_same_thread": False} if db_url.startswith("sqlite:///") else {},
 )
 
 SessionLocal = sessionmaker(
